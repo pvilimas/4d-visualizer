@@ -4,7 +4,9 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -20,6 +22,9 @@
 #include "raylib.h"
 #include "raymath.h"
 
+#define MIN(x,y) ((x)<(y)?(x):(y))
+#define MAX(x,y) ((x)>(y)?(x):(y))
+
 // ------------------------------ PARAMETERS ------------------------------- //
 
 // prefix to use for console commands
@@ -34,6 +39,9 @@
 // how many console commands can be queued at once
 #define CONSOLE_MSG_MAX_QUEUE_SIZE 10
 
+// how many lines there can be in the console + 1 basically
+#define CONSOLE_GUI_AUTOFILL_ENTRY_COUNT 10
+
 // how long the x,y,z,w axes extend out from the origin
 #define AXIS_MAGNITUDE 1000
 
@@ -42,6 +50,9 @@
 
 // how many segments to draw the axis cylinders
 #define AXIS_SEGMENTS 16
+
+// how many segments to draw a cylinder of a mesh
+#define MESH_CYLINDER_SEGMENTS 16
 
 // the axis colors
 #define WORLD_X_AXIS_COLOR ((Color){ 255, 0, 0, 255 })
@@ -60,6 +71,27 @@
 // the color of the origin sphere
 #define ORIGIN_COLOR WHITE
 
+// ------------------------------ MODEL TYPES ------------------------------ //
+
+typedef enum {
+    MT_NONE,
+
+    MT_TETRA,
+    MT_CUBE,
+    MT_OCT,
+    MT_ICO,
+
+    MT_5CELL,
+    MT_8CELL,
+    // MT_16CELL,
+    // MT_24CELL,
+    // MT_120CELL,
+    // MT_600CELL,
+    // ...
+
+    MT_COUNT
+} ModelType;
+
 // -------------------------------- 4D MESH -------------------------------- //
 
 typedef struct{
@@ -72,8 +104,15 @@ typedef struct{
 Mesh4D mesh4d_new(const Vector4* vertices, int vertex_count,
                 const int (*edges)[2], int edge_count);
 
-Mesh4D mesh4d_new_5cell();
+Mesh4D mesh4d_new_empty();
 
+// 3d shapes - w=0
+Mesh4D mesh4d_new_tetra();
+Mesh4D mesh4d_new_cube();
+Mesh4D mesh4d_new_oct();
+
+// 4d shapes
+Mesh4D mesh4d_new_5cell();
 Mesh4D mesh4d_new_8cell();
 
 void mesh4d_free(Mesh4D* mesh);
@@ -89,6 +128,28 @@ typedef struct {
 typedef struct {
     Vector3 x, y, z, w;
 } ProjectionAxes4D;
+
+// ------------------------------- 4D CAMERA ------------------------------- //
+
+typedef enum {
+    CM_2D_ORTHO,    // you're locked to the z-axis which is hidden
+    CM_3D_ORBITAL,
+} CameraMode4D;
+
+typedef struct {
+    CameraMode4D mode;
+    // CM_2D_ORTHO
+    Vector3 ortho_view_dir;
+    Vector2 ortho_pan;
+    float ortho_zoom;
+    // CM_3D_ORBITAL
+    float orbital_yaw;
+    float orbital_pitch;
+    float orbital_radius;
+} Camera4D;
+
+void update_camera_ortho();
+void update_camera_orbital();
 
 // -------------------------------- 4D VIEW -------------------------------- //
 
@@ -109,6 +170,7 @@ typedef struct
     ProjectionAxes4D axes;
     Rotation4D rotation;
     Camera3D camera;
+    Camera4D camera_control;
 } View4D;
 
 // ------------------------------- SETTINGS -------------------------------- //
@@ -117,9 +179,13 @@ typedef struct {
 
     // console settings
 
-    bool console_mode_gui;      // if false use popout-terminal mode, if true gui
-
     // simulation settings
+
+    // which camera mode to display the simulation in
+    CameraMode4D camera_mode;
+
+    // rendering settings
+    bool axes_enabled;          // enable/disable world and local axes
 
     // fade alpha linearly along the w-axis (further = more transparent)
     bool w_alpha_fade_enabled;   // enable/disable alpha fade
@@ -147,7 +213,10 @@ typedef struct {
 
 } Settings;
 
-Settings get_default_settings();
+// get different presets of the settings
+Settings get_settings_default();    // experimental defaults
+Settings get_settings_nofade();     // no color or alpha fading, no w-depth cues
+Settings get_settings_fade();       // strong w-depth cues
 
 // ------------------------------- CONSOLE --------------------------------- //
 
@@ -158,16 +227,43 @@ typedef enum {
     // quit
     CMT_QUIT,
 
-    // pause
-    CMT_TOGGLE_PAUSE,
+    // play and pause the simulation
+    CMT_PLAY,
+    CMT_PAUSE,
 
-    // commands to modify the settings
+    // simulation settings
+
+    // view <2d|3d>
+    CMT_CHANGE_VIEW_2D,
+    CMT_CHANGE_VIEW_3D,
+
+    // axes <on|off>
+    CMT_SET_AXES_ENABLED,
+
+    // rotate <plane0:string> [plane1:string]
+    CMT_TOGGLE_ROTATION_XY,
+    CMT_TOGGLE_ROTATION_XZ,
+    CMT_TOGGLE_ROTATION_XW,
+    CMT_TOGGLE_ROTATION_YZ,
+    CMT_TOGGLE_ROTATION_YW,
+    CMT_TOGGLE_ROTATION_ZW,
+
+    // model <model:string>
+    CMT_SET_MODEL_TETRA,
+    CMT_SET_MODEL_CUBE,
+    CMT_SET_MODEL_OCT,
+    CMT_SET_MODEL_ICO,
+
+    CMT_SET_MODEL_5CELL,
+    CMT_SET_MODEL_8CELL,
+
+    // rendering settings
 
     // wfade alpha <enabled:bool>
     CMT_SET_WFADE_ALPHA_ENABLE,
     // wfade alpha range <w-near:float> <w-far:float>
     CMT_SET_WFADE_ALPHA_RANGE,
-    // wfade alpha segments <n:float>
+    // wfade alpha segments <n:int>
     CMT_SET_WFADE_ALPHA_SEGMENTS,
     // wfade alpha near <a:float>
     CMT_SET_WFADE_ALPHA_NEAR,
@@ -178,7 +274,7 @@ typedef enum {
     CMT_SET_WFADE_COLOR_ENABLE,
     // wfade color range <w-near:float> <w-far:float>
     CMT_SET_WFADE_COLOR_RANGE,
-    // wfade color segments <n:float>
+    // wfade color segments <n:int>
     CMT_SET_WFADE_COLOR_SEGMENTS,
     // wfade color near <r:float> <g:float> <b:float>
     CMT_SET_WFADE_COLOR_NEAR,
@@ -189,7 +285,7 @@ typedef enum {
     CMT_SET_WFADE_THICK_ENABLE,
     // wfade thick range <w-near:float> <w-far:float>
     CMT_SET_WFADE_THICK_RANGE,
-    // wfade thick segments <n>
+    // wfade thick segments <n:int>
     CMT_SET_WFADE_THICK_SEGMENTS,
     // wfade thick near <t:float>
     CMT_SET_WFADE_THICK_NEAR,
@@ -203,27 +299,15 @@ typedef enum {
 
 // ----------------------- CONSOLE MESSAGE ARGUMENTS ----------------------- //
 
+// TODO fix all bugs related to argument parsing
 // parse different types of console command arguments
 // order of priority is int > float > bool > string
 typedef enum {
-    CMAT_INVALID = 0,
     CMAT_INT,   // int64_t
     CMAT_FLOAT, // float
     CMAT_BOOL,  // bool
-    // CMAT_STR
+    CMAT_STRING,// char[64]
 } ConsoleMsgArgType;
-ConsoleMsgArgType cma_try_parse(const char* str, size_t len, bool* b_out, int64_t* i_out, float* f_out);
-bool cma_try_parse_bool(const char* str, size_t len, bool* out);
-bool cma_try_parse_int(const char* str, size_t len, int64_t* out);
-bool cma_try_parse_float(const char* str, size_t len, float* out);
-
-// perform all possible type conversions - type errors don't exist here
-void cma_convert_int_to_float(int64_t in, float* out);
-void cma_convert_int_to_bool(int64_t in, bool* out);
-void cma_convert_float_to_int(float in, int64_t* out);
-void cma_convert_float_to_bool(float in, bool* out);
-void cma_convert_bool_to_int(bool in, int64_t* out);
-void cma_convert_bool_to_float(bool in, float* out);
 
 typedef struct {
     ConsoleMsgArgType type;
@@ -231,9 +315,36 @@ typedef struct {
         bool bool_value;
         int64_t int_value;
         float float_value;
-        // char[64] str_value;
+        char string_value[CONSOLE_MSG_LEN];
     } get;
 } ConsoleMsgArg;
+
+// parse as a specific type depending on what's needed
+void cma_convert_to_bool(const ConsoleMsgArg* arg, bool* out);
+void cma_convert_to_int(const ConsoleMsgArg* arg, int64_t* out);
+void cma_convert_to_float(const ConsoleMsgArg* arg, float* out);
+void cma_convert_to_string(const ConsoleMsgArg* arg, char* out);
+
+// return the most strictly matched type
+ConsoleMsgArgType cma_parse(const char* str, size_t len, bool* b_out, int64_t* i_out, float* f_out, char* s_out);
+bool cma_try_parse_bool(const char* str, size_t len, bool* out);
+bool cma_try_parse_int(const char* str, size_t len, int64_t* out);
+bool cma_try_parse_float(const char* str, size_t len, float* out);
+bool cma_try_parse_string(const char* str, size_t len, char* out);
+
+// perform all possible type conversions - type errors don't exist here
+void cmatc_int_to_float(int64_t in, float* out);
+void cmatc_int_to_bool(int64_t in, bool* out);
+void cmatc_int_to_string(int64_t in, char* out);
+void cmatc_float_to_int(float in, int64_t* out);
+void cmatc_float_to_bool(float in, bool* out);
+void cmatc_float_to_string(float in, char* out);
+void cmatc_bool_to_int(bool in, int64_t* out);
+void cmatc_bool_to_float(bool in, float* out);
+void cmatc_bool_to_string(bool in, char* out);
+void cmatc_string_to_int(char* in, int64_t* out);
+void cmatc_string_to_float(char* in, float* out);
+void cmatc_string_to_bool(char* in, bool* out);
 
 typedef struct {
     ConsoleMsgType type;
@@ -258,6 +369,19 @@ bool cmq_push(ConsoleMsg msg);
 // returns false if locked or if no messages are in the queue
 bool cmq_pop(ConsoleMsg* msg_out);
 
+// ------------------------ CONSOLE MESSAGE SCHEMAS ------------------------ //
+
+typedef struct
+{
+    ConsoleMsgType type;
+    const char* words[6];
+    int word_count;
+    ConsoleMsgArgType arg_types[CONSOLE_MSG_MAX_ARG_COUNT];
+    int arg_count;
+} ConsoleMsgSchema;
+
+ConsoleMsgSchema get_console_msg_schema(ConsoleMsgType type);
+
 // ----------------------- CONSOLE MESSAGE HANDLERS ------------------------ //
 
 typedef enum {
@@ -275,7 +399,27 @@ typedef struct {
 typedef ConsoleMsgResult (*ConsoleMsgHandler)(const ConsoleMsg*);
 
 ConsoleMsgResult cmh_quit(const ConsoleMsg* msg);                       // CMT_QUIT
-ConsoleMsgResult cmh_toggle_pause(const ConsoleMsg* msg);               // CMT_TOGGLE_PAUSE
+ConsoleMsgResult cmh_play(const ConsoleMsg* msg);                       // CMT_PLAY
+ConsoleMsgResult cmh_pause(const ConsoleMsg* msg);                      // CMT_PAUSE
+
+ConsoleMsgResult cmh_change_view_2d(const ConsoleMsg* msg);             // CMT_CHANGE_VIEW_2D
+ConsoleMsgResult cmh_change_view_3d(const ConsoleMsg* msg);             // CMT_CHANGE_VIEW_3D
+
+ConsoleMsgResult cmh_set_axes_enabled(const ConsoleMsg* msg);           // CMT_SET_AXES_ENABLED
+
+ConsoleMsgResult cmh_toggle_rotation_xy(const ConsoleMsg* msg);         // CMT_TOGGLE_ROTATION_XY
+ConsoleMsgResult cmh_toggle_rotation_xz(const ConsoleMsg* msg);         // CMT_TOGGLE_ROTATION_XZ
+ConsoleMsgResult cmh_toggle_rotation_xw(const ConsoleMsg* msg);         // CMT_TOGGLE_ROTATION_XW
+ConsoleMsgResult cmh_toggle_rotation_yz(const ConsoleMsg* msg);         // CMT_TOGGLE_ROTATION_YZ
+ConsoleMsgResult cmh_toggle_rotation_yw(const ConsoleMsg* msg);         // CMT_TOGGLE_ROTATION_YW
+ConsoleMsgResult cmh_toggle_rotation_zw(const ConsoleMsg* msg);         // CMT_TOGGLE_ROTATION_ZW
+
+ConsoleMsgResult cmh_set_model_tetra(const ConsoleMsg* msg);            // CMT_SET_MODEL_TETRA
+ConsoleMsgResult cmh_set_model_cube(const ConsoleMsg* msg);             // CMT_SET_MODEL_CUBE
+ConsoleMsgResult cmh_set_model_oct(const ConsoleMsg* msg);              // CMT_SET_MODEL_OCT
+ConsoleMsgResult cmh_set_model_ico(const ConsoleMsg* msg);              // CMT_SET_MODEL_ICO
+ConsoleMsgResult cmh_set_model_5cell(const ConsoleMsg* msg);            // CMT_SET_MODEL_5CELL
+ConsoleMsgResult cmh_set_model_8cell(const ConsoleMsg* msg);            // CMT_SET_MODEL_8CELL
 
 ConsoleMsgResult cmh_set_wfade_alpha_enable(const ConsoleMsg* msg);     // CMT_SET_WFADE_ALPHA_ENABLE
 ConsoleMsgResult cmh_set_wfade_alpha_range(const ConsoleMsg* msg);      // CMT_SET_WFADE_ALPHA_RANGE
@@ -298,13 +442,13 @@ ConsoleMsgResult cmh_set_wfade_thick_far(const ConsoleMsg* msg);        // CMT_S
 // -------------------------------- MODELS --------------------------------- //
 
 typedef struct {
+    ModelType type;
     Axes4D axes;
     Mesh4D mesh;
 } Model4D;
 
 // set which model to display
-void app_set_model_5cell();
-void app_set_model_8cell();
+void app_set_model(ModelType type);
 
 // ------------------------------ APPLICATION ------------------------------ //
 
@@ -328,6 +472,8 @@ typedef struct {
     char console_gui_input[CONSOLE_MSG_LEN];
     size_t console_gui_input_len;
     bool console_gui_focused;
+    const char* console_gui_autofill_entries[CONSOLE_GUI_AUTOFILL_ENTRY_COUNT];
+    size_t console_gui_autofill_entries_len;
 
 } AppContext;
 extern AppContext APP; // declared in main.c
@@ -340,20 +486,23 @@ void app_exit();
 
 // drawing
 
-// draws an entire line
+// draw an entire line
 void draw_line4(Vector4 p0, Vector4 p1);
 
-// draws a camera-facing quad for a segment, width0 at p0, width1 at p1
+// draw an open cylinder for a segment, width0 at p0, width1 at p1
 void draw_line_segment3(Vector3 p0, Vector3 p1,
                         float width0, float width1,
                         Vector3 cam_pos,
                         Color color);
 
-// draws a camera-facing quad for a segment, width0 at p0, width1 at p1
+// draw an open cylinder for a segment, width0 at p0, width1 at p1
 void draw_line_segment4(Vector4 p0, Vector4 p1,
                        float width0, float width1,
                        Vector3 cam_pos,
                        Color color);
+
+// draw a cylinder without circular endcaps
+void draw_open_cylinder(Vector3 start, Vector3 end, float radius_start, float radius_end, int sides, Color color);
 
 // projection
 
@@ -382,5 +531,22 @@ bool console_parse_line(const char *line, ConsoleMsg *msg_out);
 void console_gui_append_char(char c);
 void console_gui_backspace();
 void console_gui_clear();
+// control the gui console autofill entries
+void console_gui_append_autofill_entry(const char* str); // appends to top
+void console_gui_clear_autofill_entries();
+void console_gui_refresh_autofill();
+
+// toggle all 4 planes of rotation and turn off other ones to prevent a conflict
+void toggle_rotation_plane(bool* target,
+                           bool* conflict_a,
+                           bool* conflict_b,
+                           bool* conflict_c,
+                           bool* conflict_d);
+void toggle_rotation_xy();
+void toggle_rotation_xz();
+void toggle_rotation_xw();
+void toggle_rotation_yz();
+void toggle_rotation_yw();
+void toggle_rotation_zw();
 
 #endif // VIS_H
