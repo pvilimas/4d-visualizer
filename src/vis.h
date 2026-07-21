@@ -178,6 +178,8 @@ typedef struct
     Camera4D camera_control;
 } View4D;
 
+bool view4d_is_any_axis_rotating(const View4D* v);
+
 // ------------------------------- SETTINGS -------------------------------- //
 
 typedef struct {

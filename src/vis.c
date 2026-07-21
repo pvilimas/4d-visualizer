@@ -303,6 +303,18 @@ void update_camera_orbital()
     APP.view.camera.up = (Vector3){0, 1, 0};
 }
 
+// -------------------------------- 4D VIEW -------------------------------- //
+
+bool view4d_is_any_axis_rotating(const View4D* v)
+{
+    return (v->rotation.xy.enabled && v->rotation.xy.speed != 0)
+        || (v->rotation.xz.enabled && v->rotation.xz.speed != 0)
+        || (v->rotation.xw.enabled && v->rotation.xw.speed != 0)
+        || (v->rotation.yz.enabled && v->rotation.yz.speed != 0)
+        || (v->rotation.yw.enabled && v->rotation.yw.speed != 0)
+        || (v->rotation.zw.enabled && v->rotation.zw.speed != 0);
+}
+
 // ------------------------------- SETTINGS -------------------------------- //
 
 Settings get_settings_default()
@@ -2121,6 +2133,7 @@ void console_gui_refresh_autofill()
     // in reverse order as these entries will show up
     static const char* COMMANDS[] = {
 
+        // static commands (known at compile time)
         "quit",
 
         "wfade thick far <t:float>",
@@ -2163,9 +2176,20 @@ void console_gui_refresh_autofill()
         "model cube",
         "model tetra",
 
-        "pause",
+        // generated commands
+        NULL,
     };
-    static const int COMMAND_COUNT = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
+
+    static int COMMAND_COUNT;
+    COMMAND_COUNT = (sizeof(COMMANDS) / sizeof(COMMANDS[0]))
+        - 1; // account for generated commands
+
+    if (view4d_is_any_axis_rotating(&APP.view))
+    {
+        COMMAND_COUNT += 1;
+        COMMANDS[COMMAND_COUNT - 1] = atomic_load(&APP.is_paused) ? "play" : "pause";
+    }
+
     static char suggestion_buf[CONSOLE_GUI_AUTOFILL_ENTRY_COUNT][CONSOLE_MSG_LEN];
 
     console_gui_clear_autofill_entries();
