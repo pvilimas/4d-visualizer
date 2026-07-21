@@ -179,17 +179,70 @@ void mesh4d_free(Mesh4D* mesh)
     mesh->edge_count = 0;
 }
 
+Mesh4D mesh4d_new_24cell()
+{
+    Vector4 verts[24];
+    int count = 0;
+
+    int axis_pairs[6][2] = {
+        {0,1}, {0,2}, {0,3}, {1,2}, {1,3}, {2,3},
+    };
+
+    for (int p = 0; p < 6; p += 1)
+    {
+        int a = axis_pairs[p][0];
+        int b = axis_pairs[p][1];
+
+        for (int sa = -1; sa <= 1; sa += 2)
+        {
+            for (int sb = -1; sb <= 1; sb += 2)
+            {
+                Vector4 v = { 0, 0, 0, 0 };
+                float* coords = (float*)&v;
+                coords[a] = (float)sa;
+                coords[b] = (float)sb;
+                verts[count] = v;
+                count += 1;
+            }
+        }
+    }
+
+    int edges[96][2];
+    int edge_count = 0;
+    float edge_len_sq = 2.0f;
+
+    for (int i = 0; i < 24; i += 1)
+    {
+        for (int j = i + 1; j < 24; j += 1)
+        {
+            float dx = verts[i].x - verts[j].x;
+            float dy = verts[i].y - verts[j].y;
+            float dz = verts[i].z - verts[j].z;
+            float dw = verts[i].w - verts[j].w;
+            float dist_sq = dx*dx + dy*dy + dz*dz + dw*dw;
+
+            if (fabsf(dist_sq - edge_len_sq) < 0.001f)
+            {
+                edges[edge_count][0] = i;
+                edges[edge_count][1] = j;
+                edge_count += 1;
+            }
+        }
+    }
+
+    return mesh4d_new(verts, 24, edges, edge_count);
+}
+
 // ------------------------------- 4D CAMERA ------------------------------- //
 
 void update_camera_ortho()
 {
     APP.view.camera_control.ortho_zoom -= GetMouseWheelMove() * 0.5f;
-    if (APP.view.camera_control.ortho_zoom < 1.0f)
-    {
-        APP.view.camera_control.ortho_zoom = 1.0f;
-    }
+    APP.view.camera_control.ortho_zoom = Clamp(APP.view.camera_control.ortho_zoom,
+                                               ORTHO_ZOOM_MIN,
+                                               ORTHO_ZOOM_MAX);
 
-    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+    if (IsMouseButtonDown(MOUSE_BUTTON_MIDDLE))
     {
         Vector2 mouse_delta = GetMouseDelta();
         APP.view.camera_control.ortho_pan.x -= mouse_delta.x * 0.01f * APP.view.camera_control.ortho_zoom;
@@ -283,7 +336,7 @@ Settings get_settings_default()
     };
 }
 
-Settings get_settings_nofade()
+Settings get_settings_no_fade()
 {
     return (Settings) {
 
@@ -301,7 +354,7 @@ Settings get_settings_nofade()
     };
 }
 
-Settings get_settings_fade()
+Settings get_settings_max_fade()
 {
     return (Settings) {
 
@@ -318,8 +371,8 @@ Settings get_settings_fade()
 
         .w_color_fade_enabled = true,
         .w_color_num_segments = 24,
-        .w_color_dist_near = 0.1f,
-        .w_color_dist_far = 2.0f,
+        .w_color_dist_near = 0.001f,
+        .w_color_dist_far = 0.9f,
         .w_color_near = (Color){255, 220, 80, 255},
         .w_color_far  = (Color){40, 60, 220, 255},
 
@@ -327,8 +380,8 @@ Settings get_settings_fade()
         .w_thick_num_segments = 24,
         .w_thick_dist_near = 0.1f,
         .w_thick_dist_far = 2.0f,
-        .w_thick_near = 0.2f,
-        .w_thick_far = 0.01f,
+        .w_thick_near = 0.08f,
+        .w_thick_far = 0.02f,
     };
 }
 
@@ -729,6 +782,7 @@ ConsoleMsgSchema get_console_msg_schema(ConsoleMsgType type)
 
         [CMT_SET_MODEL_5CELL] = { CMT_SET_MODEL_5CELL, { "model", "5cell" }, 2, {{ 0 }}, 0 },
         [CMT_SET_MODEL_8CELL] = { CMT_SET_MODEL_8CELL, { "model", "8cell" }, 2, {{ 0 }}, 0 },
+        [CMT_SET_MODEL_24CELL] = { CMT_SET_MODEL_24CELL, { "model", "24cell" }, 2, {{ 0 }}, 0 },
 
         [CMT_SET_WFADE_ALPHA_ENABLE]   = { CMT_SET_WFADE_ALPHA_ENABLE,   { "wfade", "alpha" },             2, { CMAT_BOOL },                          1 },
         [CMT_SET_WFADE_ALPHA_RANGE]    = { CMT_SET_WFADE_ALPHA_RANGE,    { "wfade", "alpha", "range" },    3, { CMAT_FLOAT, CMAT_FLOAT },             2 },
@@ -931,6 +985,16 @@ ConsoleMsgResult cmh_set_model_8cell(const ConsoleMsg* msg)
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#633" };
     }
     app_set_model(MT_8CELL);
+    return (ConsoleMsgResult){ CMRT_OK, "" };
+}
+
+ConsoleMsgResult cmh_set_model_24cell(const ConsoleMsg* msg)
+{
+    if (msg->type != CMT_SET_MODEL_24CELL)
+    {
+        return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#941" };
+    }
+    app_set_model(MT_24CELL);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
@@ -1247,8 +1311,7 @@ void app_init()
     APP.view.axes.x = (Vector3){ 1, 0, 0 };
     APP.view.axes.y = (Vector3){ 0, 1, 0 };
     APP.view.axes.z = (Vector3){ 0, 0, 1 };
-    const float w_axis_len = sqrtf(3.f);
-    APP.view.axes.w = (Vector3){ w_axis_len, w_axis_len, w_axis_len };
+    APP.view.axes.w = Vector3Normalize((Vector3){1, 1, 1});
 
     APP.view.rotation.xy.enabled = false;
     APP.view.rotation.xy.speed = 0.25f;
@@ -1267,7 +1330,7 @@ void app_init()
     APP.view.camera_control.orbital_yaw = 0.0f;
     APP.view.camera_control.orbital_pitch = 0.3f;
     APP.view.camera_control.orbital_radius = 10.0f;
-    APP.view.camera_control.ortho_zoom = 10.0f;
+    APP.view.camera_control.ortho_zoom = 4.0f;
     APP.view.camera_control.ortho_view_dir = (Vector3){0, 0, -1};
 
     APP.view.camera.fovy = 45.0f;
@@ -1275,7 +1338,7 @@ void app_init()
 
     app_set_model(MT_8CELL);
 
-    APP.settings = get_settings_fade();
+    APP.settings = get_settings_max_fade();
 
     // init the console message handlers
 
@@ -1302,6 +1365,7 @@ void app_init()
 
     APP.cmh[CMT_SET_MODEL_5CELL]            = cmh_set_model_5cell;
     APP.cmh[CMT_SET_MODEL_8CELL]            = cmh_set_model_8cell;
+    APP.cmh[CMT_SET_MODEL_24CELL]           = cmh_set_model_24cell;
 
     APP.cmh[CMT_SET_WFADE_ALPHA_ENABLE]     = cmh_set_wfade_alpha_enable;
     APP.cmh[CMT_SET_WFADE_ALPHA_RANGE]      = cmh_set_wfade_alpha_range;
@@ -1527,8 +1591,6 @@ void app_run()
         // draw 2d overlays
 
         // draw XYZW axis highlights for rotation
-        DrawRectangleRounded((Rectangle){10, 10, 130, 70}, 0.3f, 5, (Color){180,180,180,255});
-        DrawRectangleRounded((Rectangle){15, 15, 120, 60}, 0.3f, 5, (Color){120,120,120,255});
         DrawTextEx(APP.ui_font, "X", (Vector2){20, 20}, 50, 1.0f,
             APP.view.rotation.xy.enabled || APP.view.rotation.xz.enabled || APP.view.rotation.xw.enabled
                 ? WORLD_X_AXIS_COLOR : LOCAL_X_AXIS_COLOR);
@@ -1651,6 +1713,9 @@ void app_set_model(ModelType type)
             break;
         case MT_8CELL:
             APP.model.mesh = mesh4d_new_8cell();
+            break;
+        case MT_24CELL:
+            APP.model.mesh = mesh4d_new_24cell();
             break;
         default:
             break;
@@ -2089,8 +2154,10 @@ void console_gui_refresh_autofill()
         "axes off",
         "axes on",
 
+        "model 24cell",
         "model 8cell",
         "model 5cell",
+
         "model ico",
         "model oct",
         "model cube",

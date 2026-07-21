@@ -55,21 +55,25 @@
 #define MESH_CYLINDER_SEGMENTS 16
 
 // the axis colors
-#define WORLD_X_AXIS_COLOR ((Color){ 255, 0, 0, 255 })
-#define WORLD_Y_AXIS_COLOR ((Color){ 0, 0, 255, 255 })
-#define WORLD_Z_AXIS_COLOR ((Color){ 0, 255, 0, 255 })
-#define WORLD_W_AXIS_COLOR ((Color){ 255, 255, 0, 255 })
+#define WORLD_X_AXIS_COLOR ((Color){ 255,  60,  60, 255 })
+#define WORLD_Y_AXIS_COLOR ((Color){  60,  120, 255, 255 })
+#define WORLD_Z_AXIS_COLOR ((Color){  60, 220,  60, 255 })
+#define WORLD_W_AXIS_COLOR ((Color){ 230, 230,   0, 255 })
 
-#define LOCAL_X_AXIS_COLOR ((Color){ 255/4, 0, 0, 255 })
-#define LOCAL_Y_AXIS_COLOR ((Color){ 0, 0, 255/4, 255 })
-#define LOCAL_Z_AXIS_COLOR ((Color){ 0, 255/4, 0, 255 })
-#define LOCAL_W_AXIS_COLOR ((Color){ 255/4, 255/4, 0, 255 })
+#define LOCAL_X_AXIS_COLOR ((Color){ 130,  40,  40, 255 })
+#define LOCAL_Y_AXIS_COLOR ((Color){  20,  50, 170, 255 })
+#define LOCAL_Z_AXIS_COLOR ((Color){  35, 120,  35, 255 })
+#define LOCAL_W_AXIS_COLOR ((Color){ 120, 120,   0, 255 })
 
 // the size of the origin sphere
 #define ORIGIN_SIZE 0.15f
 
 // the color of the origin sphere
-#define ORIGIN_COLOR WHITE
+#define ORIGIN_COLOR RAYWHITE
+
+// orthographic 2d mode zoom (z-coordinates)
+#define ORTHO_ZOOM_MIN 0.0001f
+#define ORTHO_ZOOM_MAX 20.0f
 
 // ------------------------------ MODEL TYPES ------------------------------ //
 
@@ -84,7 +88,7 @@ typedef enum {
     MT_5CELL,
     MT_8CELL,
     // MT_16CELL,
-    // MT_24CELL,
+    MT_24CELL,
     // MT_120CELL,
     // MT_600CELL,
     // ...
@@ -114,6 +118,7 @@ Mesh4D mesh4d_new_oct();
 // 4d shapes
 Mesh4D mesh4d_new_5cell();
 Mesh4D mesh4d_new_8cell();
+Mesh4D mesh4d_new_24cell();
 
 void mesh4d_free(Mesh4D* mesh);
 
@@ -215,8 +220,8 @@ typedef struct {
 
 // get different presets of the settings
 Settings get_settings_default();    // experimental defaults
-Settings get_settings_nofade();     // no color or alpha fading, no w-depth cues
-Settings get_settings_fade();       // strong w-depth cues
+Settings get_settings_no_fade();    // no color or alpha fading, no w-depth cues
+Settings get_settings_max_fade();   // strong w-depth cues
 
 // ------------------------------- CONSOLE --------------------------------- //
 
@@ -256,6 +261,7 @@ typedef enum {
 
     CMT_SET_MODEL_5CELL,
     CMT_SET_MODEL_8CELL,
+    CMT_SET_MODEL_24CELL,
 
     // rendering settings
 
@@ -420,6 +426,7 @@ ConsoleMsgResult cmh_set_model_oct(const ConsoleMsg* msg);              // CMT_S
 ConsoleMsgResult cmh_set_model_ico(const ConsoleMsg* msg);              // CMT_SET_MODEL_ICO
 ConsoleMsgResult cmh_set_model_5cell(const ConsoleMsg* msg);            // CMT_SET_MODEL_5CELL
 ConsoleMsgResult cmh_set_model_8cell(const ConsoleMsg* msg);            // CMT_SET_MODEL_8CELL
+ConsoleMsgResult cmh_set_model_24cell(const ConsoleMsg* msg);           // CMT_SET_MODEL_24CELL
 
 ConsoleMsgResult cmh_set_wfade_alpha_enable(const ConsoleMsg* msg);     // CMT_SET_WFADE_ALPHA_ENABLE
 ConsoleMsgResult cmh_set_wfade_alpha_range(const ConsoleMsg* msg);      // CMT_SET_WFADE_ALPHA_RANGE
