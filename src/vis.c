@@ -1348,7 +1348,7 @@ void app_init()
     APP.view.camera.fovy = 45.0f;
     APP.view.camera.projection = CAMERA_PERSPECTIVE;
 
-    app_set_model(MT_8CELL);
+    app_set_model(MT_5CELL);
 
     APP.settings = get_settings_max_fade();
 
@@ -1557,36 +1557,38 @@ void app_run()
         // draw the model axes
         if (APP.settings.axes_enabled)
         {
+            float scale_factor = 0.33f;
+
             Vector4 x_start_4d = { APP.model.axes.x.x, APP.model.axes.x.y, APP.model.axes.x.z, APP.model.axes.x.w };
             Vector4 x_end_4d   = { -x_start_4d.x, -x_start_4d.y, -x_start_4d.z, -x_start_4d.w };
-            Vector3 x_start = projection4(x_start_4d);
-            Vector3 x_end = projection4(x_end_4d);
+            Vector3 x_start = Vector3Scale(projection4(x_start_4d), scale_factor);
+            Vector3 x_end = Vector3Scale(projection4(x_end_4d), scale_factor);
             DrawCylinderEx(x_start, x_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_X_AXIS_COLOR);
             Vector4 y_start_4d = { APP.model.axes.y.x, APP.model.axes.y.y, APP.model.axes.y.z, APP.model.axes.y.w };
             Vector4 y_end_4d   = { -y_start_4d.x, -y_start_4d.y, -y_start_4d.z, -y_start_4d.w };
-            Vector3 y_start = projection4(y_start_4d);
-            Vector3 y_end = projection4(y_end_4d);
+            Vector3 y_start = Vector3Scale(projection4(y_start_4d), scale_factor);
+            Vector3 y_end = Vector3Scale(projection4(y_end_4d), scale_factor);
             DrawCylinderEx(y_start, y_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_Y_AXIS_COLOR);
             Vector4 z_start_4d = { APP.model.axes.z.x, APP.model.axes.z.y, APP.model.axes.z.z, APP.model.axes.z.w };
             Vector4 z_end_4d   = { -z_start_4d.x, -z_start_4d.y, -z_start_4d.z, -z_start_4d.w };
-            Vector3 z_start = projection4(z_start_4d);
-            Vector3 z_end = projection4(z_end_4d);
+            Vector3 z_start = Vector3Scale(projection4(z_start_4d), scale_factor);
+            Vector3 z_end = Vector3Scale(projection4(z_end_4d), scale_factor);
             DrawCylinderEx(z_start, z_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_Z_AXIS_COLOR);
             Vector4 w_start_4d = { APP.model.axes.w.x, APP.model.axes.w.y, APP.model.axes.w.z, APP.model.axes.w.w };
             Vector4 w_end_4d   = { -w_start_4d.x, -w_start_4d.y, -w_start_4d.z, -w_start_4d.w };
-            Vector3 w_start = projection4(w_start_4d);
-            Vector3 w_end = projection4(w_end_4d);
+            Vector3 w_start = Vector3Scale(projection4(w_start_4d), scale_factor);
+            Vector3 w_end = Vector3Scale(projection4(w_end_4d), scale_factor);
             DrawCylinderEx(w_start, w_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_W_AXIS_COLOR);
 
             // draw the endpoints
-            DrawSphere(x_start, ORIGIN_SIZE/3, ORIGIN_COLOR);
-            DrawSphere(y_start, ORIGIN_SIZE/3, ORIGIN_COLOR);
-            DrawSphere(z_start, ORIGIN_SIZE/3, ORIGIN_COLOR);
-            DrawSphere(w_start, ORIGIN_SIZE/3, ORIGIN_COLOR);
-            DrawSphere(x_end, ORIGIN_SIZE/3, ORIGIN_COLOR);
-            DrawSphere(y_end, ORIGIN_SIZE/3, ORIGIN_COLOR);
-            DrawSphere(z_end, ORIGIN_SIZE/3, ORIGIN_COLOR);
-            DrawSphere(w_end, ORIGIN_SIZE/3, ORIGIN_COLOR);
+            DrawSphere(x_start, ORIGIN_SIZE/3, LOCAL_X_AXIS_COLOR);
+            DrawSphere(y_start, ORIGIN_SIZE/3, LOCAL_Y_AXIS_COLOR);
+            DrawSphere(z_start, ORIGIN_SIZE/3, LOCAL_Z_AXIS_COLOR);
+            DrawSphere(w_start, ORIGIN_SIZE/3, LOCAL_W_AXIS_COLOR);
+            DrawSphere(x_end, ORIGIN_SIZE/3, LOCAL_X_AXIS_COLOR);
+            DrawSphere(y_end, ORIGIN_SIZE/3, LOCAL_Y_AXIS_COLOR);
+            DrawSphere(z_end, ORIGIN_SIZE/3, LOCAL_Z_AXIS_COLOR);
+            DrawSphere(w_end, ORIGIN_SIZE/3, LOCAL_W_AXIS_COLOR);
         }
 
         // draw the scene
