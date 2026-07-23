@@ -1,23 +1,19 @@
 #ifndef VIS_H
 #define VIS_H
 
-#define _POSIX_C_SOURCE 200809L
+// TODO make windows compliant
 
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
-#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <math.h>
-#include <pthread.h>
-#include <unistd.h>
 
 #include "raylib.h"
 #include "raymath.h"
@@ -74,6 +70,13 @@
 // orthographic 2d mode zoom (z-coordinates)
 #define ORTHO_ZOOM_MIN 0.0001f
 #define ORTHO_ZOOM_MAX 20.0f
+
+// gui color scheme
+
+#define GUI_COLOR_BORDER_LIGHT ((Color){180,180,180,255})
+#define GUI_COLOR_BORDER_DARK ((Color){90,90,90,255})
+#define GUI_COLOR_FILL_LIGHT ((Color){120,120,120,255})
+#define GUI_COLOR_FILL_DARK ((Color){60,60,60,255})
 
 // ------------------------------ MODEL TYPES ------------------------------ //
 
@@ -369,7 +372,6 @@ typedef struct {
 } ConsoleMsg;
 
 typedef struct {
-    pthread_mutex_t lock;
     ConsoleMsg messages[CONSOLE_MSG_MAX_QUEUE_SIZE];
     int size;
 } ConsoleMsgQueue;
@@ -377,12 +379,12 @@ typedef struct {
 // initialize the message queue to empty
 void cmq_init();
 
-// push a console message to the queue, waits for lock (called by job thread)
+// push a console message to the queue
 // returns false if the message got dropped because the queue is full
 bool cmq_push(ConsoleMsg msg);
 
-// pop a console message from the queue, exits if locked (called by main thread)
-// returns false if locked or if no messages are in the queue
+// pop a console message from the queue
+// returns false if no messages are in the queue
 bool cmq_pop(ConsoleMsg* msg_out);
 
 // ------------------------ CONSOLE MESSAGE SCHEMAS ------------------------ //
@@ -483,9 +485,8 @@ typedef struct {
     Font ui_font;
 
     // internals
-    atomic_int is_paused;
-    atomic_int is_exiting;
-    pthread_t console_thread;
+    bool is_paused;
+    bool is_exiting;
     ConsoleMsgQueue cmq;
     ConsoleMsgHandler cmh[CMT_COUNT];
 
@@ -505,7 +506,7 @@ void app_exit();
 
 // --------------------------------- UTILS --------------------------------- //
 
-// drawing
+// rendering
 
 // draw an entire line
 void draw_line4(Vector4 p0, Vector4 p1);
@@ -539,11 +540,7 @@ float w_to_alpha(float w);
 float w_to_thickness(float w);
 Color w_to_color(float w);
 
-// console jobs
-typedef void* (*ConsoleJob)(void*);
-
-// job thread function to poll the terminal window for input
-void* console_job_terminal(void* arg);
+// console
 
 // parse a single line of text from the user
 bool console_parse_line(const char *line, ConsoleMsg *msg_out);
@@ -569,6 +566,11 @@ void toggle_rotation_xw();
 void toggle_rotation_yz();
 void toggle_rotation_yw();
 void toggle_rotation_zw();
+
+// cross-platform utils
+
+int strcasecmp(const char* s1, const char* s2);
+int strncasecmp(const char* s1, const char* s2, size_t n);
 
 // ------------------------------ DEBUG FLAGS ------------------------------ //
 

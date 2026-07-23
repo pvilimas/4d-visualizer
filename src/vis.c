@@ -403,21 +403,21 @@ Settings get_settings_max_fade()
         .local_axes_enabled = true,
 
         .w_alpha_fade_enabled = true,
-        .w_alpha_num_segments = 24,
+        .w_alpha_num_segments = 96,
         .w_alpha_dist_near = 0.2f,
         .w_alpha_dist_far = 2.0f,
         .w_alpha_near = 0.95f,
         .w_alpha_far = 0.4f,
 
         .w_color_fade_enabled = true,
-        .w_color_num_segments = 24,
+        .w_color_num_segments = 96,
         .w_color_dist_near = 0.f,
         .w_color_dist_far = 0.025f,
         .w_color_near = (Color){255, 220, 80, 255},
         .w_color_far  = (Color){40, 60, 220, 255},
 
         .w_thick_fade_enabled = true,
-        .w_thick_num_segments = 24,
+        .w_thick_num_segments = 96,
         .w_thick_dist_near = 0.3f,
         .w_thick_dist_far = 5.0f,
         .w_thick_near = 0.06f,
@@ -431,13 +431,10 @@ Settings get_settings_max_fade()
 void cmq_init()
 {
     APP.cmq.size = 0;
-    pthread_mutex_init(&APP.cmq.lock, NULL);
 }
 
 bool cmq_push(ConsoleMsg msg)
 {
-    pthread_mutex_lock(&APP.cmq.lock);
-
     bool ok = false;
 
     if (APP.cmq.size < CONSOLE_MSG_MAX_QUEUE_SIZE) {
@@ -446,16 +443,11 @@ bool cmq_push(ConsoleMsg msg)
         ok = true;
     }
 
-    pthread_mutex_unlock(&APP.cmq.lock);
     return ok;
 }
 
 bool cmq_pop(ConsoleMsg *msg_out)
 {
-    if (pthread_mutex_trylock(&APP.cmq.lock) != 0) {
-        return false;
-    }
-
     bool got = false;
 
     if (APP.cmq.size > 0) {
@@ -469,7 +461,6 @@ bool cmq_pop(ConsoleMsg *msg_out)
         got = true;
     }
 
-    pthread_mutex_unlock(&APP.cmq.lock);
     return got;
 }
 
@@ -853,21 +844,21 @@ ConsoleMsgSchema get_console_msg_schema(ConsoleMsgType type)
 ConsoleMsgResult cmh_quit(const ConsoleMsg* msg)
 {
     // takes 0 arguments, ignores all that are given
-    atomic_store(&APP.is_exiting, 1);
+    APP.is_exiting = true;
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
 ConsoleMsgResult cmh_play(const ConsoleMsg* msg)
 {
     // takes 0 arguments, ignores all that are given
-    atomic_store(&APP.is_paused, 0);
+    APP.is_paused = false;
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
 ConsoleMsgResult cmh_pause(const ConsoleMsg* msg)
 {
     // takes 0 arguments, ignores all that are given
-    atomic_store(&APP.is_paused, 1);
+    APP.is_paused = true;
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
@@ -1401,7 +1392,7 @@ void app_init()
     console_gui_clear_autofill_entries();
     APP.console_gui_focused = false;
 
-    atomic_store(&APP.is_exiting, 0);
+    APP.is_exiting = false;
 
     // init the console message handlers
 
@@ -1458,7 +1449,7 @@ void app_init()
 
 void app_reset()
 {
-    atomic_store(&APP.is_paused, 0);
+    APP.is_paused = false;
 
     APP.view.axes.x = (Vector3){ 1, 0, 0 };
     APP.view.axes.y = (Vector3){ 0, 1, 0 };
@@ -1501,7 +1492,7 @@ void app_reset()
 
 void app_run()
 {
-    while (!WindowShouldClose() && !atomic_load(&APP.is_exiting)) {
+    while (!WindowShouldClose() && !APP.is_exiting) {
 
         // update the camera
         if (APP.view.camera_control.mode == CM_2D_ORTHO && !APP.console_gui_focused)
@@ -1563,12 +1554,12 @@ void app_run()
             APP.cmh[msg.type](&msg);
         }
 
-        if (atomic_load(&APP.is_exiting))
+        if (APP.is_exiting)
         {
             break;
         }
 
-        if (!atomic_load(&APP.is_paused))
+        if (!APP.is_paused)
         {
             if (APP.view.rotation.xy.enabled) APP.view.rotation.xy.angle += APP.view.rotation.xy.speed * GetFrameTime();
             if (APP.view.rotation.xz.enabled) APP.view.rotation.xz.angle += APP.view.rotation.xz.speed * GetFrameTime();
@@ -1754,11 +1745,11 @@ void app_run()
                 box_width = 130;
             }
             Color border_color = (APP.console_gui_focused)
-                ? (Color){180,180,180,255}
-                : (Color){90,90,90,255};
+                ? GUI_COLOR_BORDER_LIGHT
+                : GUI_COLOR_BORDER_DARK;
             Color fill_color = (APP.console_gui_focused)
-                ? (Color){120,120,120,255}
-                : (Color){60,60,60,255};
+                ? GUI_COLOR_FILL_LIGHT
+                : GUI_COLOR_FILL_DARK;
             float extra_height = (row_height + row_spacing) * APP.console_gui_autofill_entries_len;
             float height = 60 + extra_height;
             pos.y -= extra_height;
@@ -1797,22 +1788,74 @@ void app_run()
             DrawTextEx(APP.ui_font, APP.console_gui_input, (Vector2){pos.x+20+prefix_size.x+5, pos.y+20}, font_size, 1.0f, BLACK);
         }
 
+        // draw the w-fade display
+        {
+            int inner_width = 320;
+            int inner_height = 90;
+            int border_thick = 12;
+            int font_size = 30;
+            Vector2 tl = { GetScreenWidth() - (inner_width + (border_thick * 2)), border_thick + 10 };
+
+            Rectangle border_rec = { tl.x, tl.y,
+                inner_width + border_thick, inner_height + border_thick};
+            Rectangle fill_rec = { tl.x+(border_thick/2), tl.y+(border_thick/2), inner_width, inner_height };
+
+            Color border_color = GUI_COLOR_BORDER_DARK;
+            Color fill_color = GUI_COLOR_FILL_DARK;
+
+            DrawRectangleRounded(border_rec, 0.3, 10, border_color);
+            DrawRectangleRounded(fill_rec, 0.3, 10, fill_color);
+
+            Vector2 line_start = {tl.x + 35, tl.y + (inner_height/2)};
+            Vector2 line_end = {tl.x + inner_width - 35, tl.y + (inner_height/2)};
+
+            DrawLineEx(line_start, line_end, 5.0f, WORLD_W_AXIS_COLOR);
+
+            Vector2 near_text_pos = {
+                line_start.x - 13,
+                line_start.y - (font_size + 10)
+            };
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_dist_near),
+                        near_text_pos, font_size, 1.0f, LOCAL_W_AXIS_COLOR);
+
+            near_text_pos.y += (font_size + 20);
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_near),
+                        near_text_pos, font_size, 1.0f, (Color){30,30,30,255});
+
+            Vector2 far_text_pos = {
+                line_end.x - MeasureTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_dist_far), font_size, 1.0f).x + 13,
+                line_end.y - (font_size + 10)
+            };
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_dist_far),
+                        far_text_pos, font_size, 1.0f, LOCAL_W_AXIS_COLOR);
+
+            far_text_pos.x = line_end.x - MeasureTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_far), font_size, 1.0f).x + 13;
+            far_text_pos.y += (font_size + 20);
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_far),
+                        far_text_pos, font_size, 1.0f, (Color){30,30,30,255});
+
+        }
+
         // draw debug information
 
 #if DEBUG_CAMERA_COORDS
 
-    if (APP.view.camera_control.mode == CM_3D_ORBITAL)
-    {
-        const char* camera_coord_text = TextFormat(
-            "Camera:\n"
-            "yaw: %f\n"
-            "pitch: %f\n"
-            "radius: %f\n",
-            APP.view.camera_control.orbital_yaw,
-            APP.view.camera_control.orbital_pitch,
-            APP.view.camera_control.orbital_radius);
-        DrawText(camera_coord_text, 50, 300, 20, RED);
-    }
+        if (APP.view.camera_control.mode == CM_3D_ORBITAL)
+        {
+            const char* camera_coord_text = TextFormat(
+                "Camera:\n"
+                "yaw: %f\n"
+                "pitch: %f\n"
+                "radius: %f\n",
+                APP.view.camera_control.orbital_yaw,
+                APP.view.camera_control.orbital_pitch,
+                APP.view.camera_control.orbital_radius);
+            DrawText(camera_coord_text, 50, 300, 20, RED);
+        }
 
 #endif
         EndDrawing();
@@ -1823,7 +1866,8 @@ void app_exit()
 {
     CloseWindow();
     fflush(stdout);
-    _exit(0);
+    // _exit(0);
+    exit(0);
 }
 
 // -------------------------------- MODELS --------------------------------- //
@@ -1873,6 +1917,8 @@ void app_set_model(ModelType type)
 
 // --------------------------------- UTILS --------------------------------- //
 
+// rendering
+
 void draw_line4(Vector4 p0, Vector4 p1)
 {
     bool color_on = APP.settings.w_color_fade_enabled;
@@ -1882,26 +1928,28 @@ void draw_line4(Vector4 p0, Vector4 p1)
     Color flat_color = APP.settings.w_color_near;
 
     // number of segments for the line
-    // int n = 1;
-    // if (color_on)
-    // {
-    //     n = APP.settings.w_color_num_segments;
-    // }
-    //
-    // if (alpha_on && APP.settings.w_alpha_num_segments > n)
-    // {
-    //     n = APP.settings.w_alpha_num_segments;
-    // }
-    //
-    // if (thick_on && APP.settings.w_thick_num_segments > n)
-    // {
-    //     n = APP.settings.w_thick_num_segments;
-    // }
+    int n = 1;
+    if (color_on)
+    {
+        n = APP.settings.w_color_num_segments;
+    }
+
+    if (alpha_on && APP.settings.w_alpha_num_segments > n)
+    {
+        n = APP.settings.w_alpha_num_segments;
+    }
+
+    if (thick_on && APP.settings.w_thick_num_segments > n)
+    {
+        n = APP.settings.w_thick_num_segments;
+    }
 
     // TODO make a setting for this, "wfade thick segments auto" +4color and alpha
     // TODO turn this 0.05 into a number that tracks the # of edges to speed up rendering
     // this one doesn't have to be a setting, (makes edges less accurate on 600cells)
-    int n = (int) roundf(Vector4Distance(p0, p1) / 0.01f);
+    // int n = (int) roundf(Vector4Distance(p0, p1) / 0.01f);
+    // int n = (int) roundf(Vector4Distance(p0, p1) / 0.05f);
+    // WARNING auto seems like a bad idea, 96 segments is plenty and 24cell renders fine
 
     float first_width = APP.settings.w_thick_near;
     Color first_color = flat_color;
@@ -2011,6 +2059,8 @@ void draw_open_cylinder(Vector3 start, Vector3 end, float radius_start, float ra
     }
 }
 
+// projection
+
 Vector3 projection4(Vector4 v)
 {
     Vector3 result = { 0, 0, 0 };
@@ -2058,65 +2108,7 @@ Color w_to_color(float w)
     return ColorLerp(APP.settings.w_color_far, APP.settings.w_color_near, t);
 }
 
-void* console_job_terminal(void* arg)
-{
-    char* line = NULL;
-    size_t len = 0;
-
-    while (!atomic_load(&APP.is_exiting))
-    {
-
-        fputs(CONSOLE_MSG_PREFIX, stdout);
-        fflush(stdout);
-
-        if (atomic_load(&APP.is_exiting))
-        {
-            exit(0);
-        }
-
-        ssize_t read = getline(&line, &len, stdin);
-
-        if (atomic_load(&APP.is_exiting))
-        {
-            exit(0);
-        }
-
-        if (read < 0) {
-            break; // eof
-        }
-
-        line[strcspn(line, "\n")] = '\0';
-
-        ConsoleMsg msg;
-        if (console_parse_line(line, &msg))
-        {
-            // try to push, if the queue is full, fuck it not my problem
-            cmq_push(msg);
-            // if (!cmq_push(msg)) {
-                // fprintf(stderr, "console: message queue full\n");
-            // }
-        }
-        else
-        {
-            // fprintf(stderr, "console: could not parse: %s\n", line);
-        }
-    }
-
-    free(line);
-    return NULL;
-}
-
-void* console_job_gui(void* arg)
-{
-    char line[CONSOLE_MSG_LEN];
-    size_t len = 0;
-
-    while (!atomic_load(&APP.is_exiting))
-    {
-
-    }
-    return NULL;
-}
+// console
 
 bool console_parse_line(const char* line, ConsoleMsg* msg_out)
 {
@@ -2147,7 +2139,7 @@ bool console_parse_line(const char* line, ConsoleMsg* msg_out)
         bool words_match = true;
         for (int w = 0; w < schema.word_count; w += 1)
         {
-            if (strcmp(tokens[w], schema.words[w]))
+            if (strcasecmp(tokens[w], schema.words[w]))
             {
                 words_match = false;
                 break;
@@ -2330,12 +2322,12 @@ void console_gui_refresh_autofill()
 
     static int COMMAND_COUNT;
     COMMAND_COUNT = (sizeof(COMMANDS) / sizeof(COMMANDS[0]))
-        - 1; // account for generated commands
+        - 1; // account for generated commands, increment this when adding any
 
     if (view4d_is_any_axis_rotating(&APP.view))
     {
         COMMAND_COUNT += 1;
-        COMMANDS[COMMAND_COUNT - 1] = atomic_load(&APP.is_paused) ? "play" : "pause";
+        COMMANDS[COMMAND_COUNT - 1] = APP.is_paused ? "play" : "pause";
     }
 
     static char suggestion_buf[CONSOLE_GUI_AUTOFILL_ENTRY_COUNT][CONSOLE_MSG_LEN];
@@ -2365,7 +2357,7 @@ void console_gui_refresh_autofill()
             bool already_present = false;
             for (int j = 0; j < suggestion_count; j += 1)
             {
-                if (!strcmp(suggestion_buf[j], suggestion_buf[suggestion_count]))
+                if (!strcasecmp(suggestion_buf[j], suggestion_buf[suggestion_count]))
                 {
                     already_present = true;
                     break;
@@ -2394,7 +2386,7 @@ void console_gui_refresh_autofill()
     int suggestion_count = 0;
     for (int i = 0; i < COMMAND_COUNT; i += 1)
     {
-        if (strncmp(COMMANDS[i], APP.console_gui_input, input_len))
+        if (strncasecmp(COMMANDS[i], APP.console_gui_input, input_len))
         {
             continue;
         }
@@ -2447,7 +2439,7 @@ void console_gui_refresh_autofill()
         bool already_present = false;
         for (int j = 0; j < suggestion_count; j += 1)
         {
-            if (!strcmp(suggestion_buf[j], suggestion_buf[suggestion_count]))
+            if (!strcasecmp(suggestion_buf[j], suggestion_buf[suggestion_count]))
             {
                 already_present = true;
                 break;
@@ -2516,4 +2508,50 @@ void toggle_rotation_zw()
     toggle_rotation_plane(&APP.view.rotation.zw.enabled,
         &APP.view.rotation.xz.enabled, &APP.view.rotation.xw.enabled,
         &APP.view.rotation.yz.enabled, &APP.view.rotation.yw.enabled);
+}
+
+// cross-platform utils
+
+int strcasecmp(const char *s1, const char *s2)
+{
+    while (*s1 != '\0' && *s2 != '\0')
+    {
+        unsigned char c1 = (unsigned char)tolower((unsigned char)*s1);
+        unsigned char c2 = (unsigned char)tolower((unsigned char)*s2);
+
+        if (c1 != c2)
+        {
+            return (int)c1 - (int)c2;
+        }
+
+        s1++;
+        s2++;
+    }
+
+    return (unsigned char) tolower((unsigned char) *s1) -
+        (unsigned char) tolower((unsigned char) *s2);
+}
+
+int strncasecmp(const char* s1, const char* s2, size_t n)
+{
+    if (n == 0)
+    {
+        return 0;
+    }
+
+    while (n-- > 0)
+    {
+        unsigned char c1 = (unsigned char) tolower((unsigned char) *s1);
+        unsigned char c2 = (unsigned char) tolower((unsigned char) *s2);
+
+        if (c1 != c2 || *s1 == '\0' || *s2 == '\0')
+        {
+            return (int)c1 - (int)c2;
+        }
+
+        s1 += 1;
+        s2 += 1;
+    }
+
+    return 0;
 }
