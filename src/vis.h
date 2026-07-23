@@ -60,10 +60,10 @@
 #define WORLD_Z_AXIS_COLOR ((Color){  60, 220,  60, 255 })
 #define WORLD_W_AXIS_COLOR ((Color){ 230, 230,   0, 255 })
 
-#define LOCAL_X_AXIS_COLOR ((Color){ 130,  40,  40, 255 })
-#define LOCAL_Y_AXIS_COLOR ((Color){  20,  50, 170, 255 })
-#define LOCAL_Z_AXIS_COLOR ((Color){  35, 120,  35, 255 })
-#define LOCAL_W_AXIS_COLOR ((Color){ 120, 120,   0, 255 })
+#define LOCAL_X_AXIS_COLOR ((Color){ 120,  25,  25, 255 })
+#define LOCAL_Y_AXIS_COLOR ((Color){  15,  40, 160, 255 })
+#define LOCAL_Z_AXIS_COLOR ((Color){  30, 110,  30, 255 })
+#define LOCAL_W_AXIS_COLOR ((Color){ 110, 110,   0, 255 })
 
 // the size of the origin sphere
 #define ORIGIN_SIZE 0.15f
@@ -87,7 +87,7 @@ typedef enum {
 
     MT_5CELL,
     MT_8CELL,
-    // MT_16CELL,
+    MT_16CELL,
     MT_24CELL,
     // MT_120CELL,
     // MT_600CELL,
@@ -103,10 +103,12 @@ typedef struct{
     int vertex_count;
     int (*edges)[2];
     int edge_count;
+    float radius;
 } Mesh4D;
 
 Mesh4D mesh4d_new(const Vector4* vertices, int vertex_count,
-                const int (*edges)[2], int edge_count);
+                const int (*edges)[2], int edge_count,
+                float radius);
 
 Mesh4D mesh4d_new_empty();
 
@@ -118,6 +120,7 @@ Mesh4D mesh4d_new_oct();
 // 4d shapes
 Mesh4D mesh4d_new_5cell();
 Mesh4D mesh4d_new_8cell();
+Mesh4D mesh4d_new_16cell();
 Mesh4D mesh4d_new_24cell();
 
 void mesh4d_free(Mesh4D* mesh);
@@ -192,7 +195,8 @@ typedef struct {
     CameraMode4D camera_mode;
 
     // rendering settings
-    bool axes_enabled;          // enable/disable world and local axes
+    bool world_axes_enabled;     // enable/disable world axes
+    bool local_axes_enabled;     // enable/disable local axes for the model
 
     // fade alpha linearly along the w-axis (further = more transparent)
     bool w_alpha_fade_enabled;   // enable/disable alpha fade
@@ -238,14 +242,17 @@ typedef enum {
     CMT_PLAY,
     CMT_PAUSE,
 
+    // reset
+    CMT_RESET,
+
     // simulation settings
 
     // view <2d|3d>
     CMT_CHANGE_VIEW_2D,
     CMT_CHANGE_VIEW_3D,
 
-    // axes <on|off>
-    CMT_SET_AXES_ENABLED,
+    // axes
+    CMT_TOGGLE_AXES,
 
     // rotate <plane0:string> [plane1:string]
     CMT_TOGGLE_ROTATION_XY,
@@ -263,6 +270,7 @@ typedef enum {
 
     CMT_SET_MODEL_5CELL,
     CMT_SET_MODEL_8CELL,
+    CMT_SET_MODEL_16CELL,
     CMT_SET_MODEL_24CELL,
 
     // rendering settings
@@ -406,9 +414,12 @@ typedef struct {
 // a function type that executes a console message
 typedef ConsoleMsgResult (*ConsoleMsgHandler)(const ConsoleMsg*);
 
+// console message handler implementations for all message types
 ConsoleMsgResult cmh_quit(const ConsoleMsg* msg);                       // CMT_QUIT
 ConsoleMsgResult cmh_play(const ConsoleMsg* msg);                       // CMT_PLAY
 ConsoleMsgResult cmh_pause(const ConsoleMsg* msg);                      // CMT_PAUSE
+
+ConsoleMsgResult cmh_reset(const ConsoleMsg* msg);                      // CMT_RESET
 
 ConsoleMsgResult cmh_change_view_2d(const ConsoleMsg* msg);             // CMT_CHANGE_VIEW_2D
 ConsoleMsgResult cmh_change_view_3d(const ConsoleMsg* msg);             // CMT_CHANGE_VIEW_3D
@@ -487,7 +498,8 @@ typedef struct {
 } AppContext;
 extern AppContext APP; // declared in main.c
 
-void app_init();
+void app_init();    // inits raylib + data
+void app_reset();   // just inits the data back to defaults
 void app_run();
 void app_exit();
 
@@ -557,5 +569,10 @@ void toggle_rotation_xw();
 void toggle_rotation_yz();
 void toggle_rotation_yw();
 void toggle_rotation_zw();
+
+// ------------------------------ DEBUG FLAGS ------------------------------ //
+
+// display camera coordinates on the screen
+#define DEBUG_CAMERA_COORDS 0
 
 #endif // VIS_H

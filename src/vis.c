@@ -3,7 +3,8 @@
 // -------------------------------- 4D MESH -------------------------------- //
 
 Mesh4D mesh4d_new(const Vector4* vertices, int vertex_count,
-                  const int (*edges)[2], int edge_count)
+                  const int (*edges)[2], int edge_count,
+                  float radius)
 {
     Mesh4D mesh = {0};
     mesh.vertex_count = vertex_count;
@@ -21,12 +22,14 @@ Mesh4D mesh4d_new(const Vector4* vertices, int vertex_count,
     mesh.edges = malloc(sizeof(int[2]) * edge_count);
     memcpy(mesh.edges, edges, sizeof(int[2]) * edge_count);
 
+    mesh.radius = radius;
+
     return mesh;
 }
 
 Mesh4D mesh4d_new_empty()
 {
-    return mesh4d_new(NULL, 0, NULL, 0);
+    return mesh4d_new(NULL, 0, NULL, 0, 0);
 }
 
 Mesh4D mesh4d_new_tetra()
@@ -42,7 +45,7 @@ Mesh4D mesh4d_new_tetra()
         {1,2}, {1,3},
         {2,3},
     };
-    return mesh4d_new(VERTICES, 4, EDGES, 6);
+    return mesh4d_new(VERTICES, 4, EDGES, 6, Vector4Length(VERTICES[0]));
 }
 
 Mesh4D mesh4d_new_cube()
@@ -60,7 +63,7 @@ Mesh4D mesh4d_new_cube()
         {5,7},
         {6,7},
     };
-    return mesh4d_new(VERTICES, 8, EDGES, 12);
+    return mesh4d_new(VERTICES, 8, EDGES, 12, Vector4Length(VERTICES[0]));
 }
 
 Mesh4D mesh4d_new_oct()
@@ -80,7 +83,7 @@ Mesh4D mesh4d_new_oct()
         {5, 0}, {5, 1}, {5, 2}, {5, 3},
     };
 
-    return mesh4d_new(VERTICES, 6, EDGES, 12);
+    return mesh4d_new(VERTICES, 6, EDGES, 12, Vector4Length(VERTICES[0]));
 }
 
 Mesh4D mesh4d_new_ico()
@@ -114,7 +117,7 @@ Mesh4D mesh4d_new_ico()
         {8, 9}, {10, 11}
     };
 
-    return mesh4d_new(VERTICES, 12, EDGES, 30);
+    return mesh4d_new(VERTICES, 12, EDGES, 30, Vector4Length(VERTICES[0]));
 }
 
 Mesh4D mesh4d_new_5cell()
@@ -132,7 +135,7 @@ Mesh4D mesh4d_new_5cell()
         {2,3}, {2,4},
         {3,4},
     };
-    return mesh4d_new(VERTICES, 5, EDGES, 10);
+    return mesh4d_new(VERTICES, 5, EDGES, 10, Vector4Length(VERTICES[0]));
 }
 
 Mesh4D mesh4d_new_8cell()
@@ -155,28 +158,28 @@ Mesh4D mesh4d_new_8cell()
         {14,15},
     };
 
-    return mesh4d_new(VERTICES, 16, EDGES, 32);
+    return mesh4d_new(VERTICES, 16, EDGES, 32, Vector4Length(VERTICES[0]));
 }
 
-void mesh4d_free(Mesh4D* mesh)
+Mesh4D mesh4d_new_16cell()
 {
-    if (!mesh)
-    {
-        return;
-    }
+    static const Vector4 VERTICES[8] = {
+        {  1,  0,  0,  0 }, { -1,  0,  0,  0 },
+        {  0,  1,  0,  0 }, {  0, -1,  0,  0 },
+        {  0,  0,  1,  0 }, {  0,  0, -1,  0 },
+        {  0,  0,  0,  1 }, {  0,  0,  0, -1 },
+    };
 
-    if (mesh->vertices)
-    {
-        free(mesh->vertices);
-    }
-    if (mesh->edges)
-    {
-        free(mesh->edges);
-    }
-    mesh->vertices = NULL;
-    mesh->edges = NULL;
-    mesh->vertex_count = 0;
-    mesh->edge_count = 0;
+    static const int EDGES[24][2] = {
+        {0,2}, {0,3}, {0,4}, {0,5}, {0,6}, {0,7},
+        {1,2}, {1,3}, {1,4}, {1,5}, {1,6}, {1,7},
+        {2,4}, {2,5}, {2,6}, {2,7},
+        {3,4}, {3,5}, {3,6}, {3,7},
+        {4,6}, {4,7},
+        {5,6}, {5,7},
+    };
+
+    return mesh4d_new(VERTICES, 8, EDGES, 24, Vector4Length(VERTICES[0]));
 }
 
 Mesh4D mesh4d_new_24cell()
@@ -230,7 +233,29 @@ Mesh4D mesh4d_new_24cell()
         }
     }
 
-    return mesh4d_new(verts, 24, edges, edge_count);
+    return mesh4d_new(verts, 24, (const int (*)[2])edges, edge_count, sqrtf(2.f));
+}
+
+void mesh4d_free(Mesh4D* mesh)
+{
+    if (!mesh)
+    {
+        return;
+    }
+
+    if (mesh->vertices)
+    {
+        free(mesh->vertices);
+    }
+    if (mesh->edges)
+    {
+        free(mesh->edges);
+    }
+    mesh->vertices = NULL;
+    mesh->edges = NULL;
+    mesh->vertex_count = 0;
+    mesh->edge_count = 0;
+    mesh->radius = 0;
 }
 
 // ------------------------------- 4D CAMERA ------------------------------- //
@@ -323,7 +348,8 @@ Settings get_settings_default()
 
         .camera_mode = CM_3D_ORBITAL,
 
-        .axes_enabled = false,
+        .world_axes_enabled = true,
+        .local_axes_enabled = false,
 
         .w_alpha_fade_enabled = true,
         .w_alpha_num_segments = 16,
@@ -354,7 +380,8 @@ Settings get_settings_no_fade()
 
         .camera_mode = CM_3D_ORBITAL,
 
-        .axes_enabled = false,
+        .world_axes_enabled = false,
+        .local_axes_enabled = false,
 
         .w_alpha_fade_enabled = false,
         .w_color_fade_enabled = false,
@@ -372,27 +399,28 @@ Settings get_settings_max_fade()
 
         .camera_mode = CM_3D_ORBITAL,
 
-        .axes_enabled = false,
+        .world_axes_enabled = true,
+        .local_axes_enabled = true,
 
         .w_alpha_fade_enabled = true,
         .w_alpha_num_segments = 24,
-        .w_alpha_dist_near = 0.1f,
+        .w_alpha_dist_near = 0.2f,
         .w_alpha_dist_far = 2.0f,
-        .w_alpha_near = 1.0f,
-        .w_alpha_far = 0.1f,
+        .w_alpha_near = 0.95f,
+        .w_alpha_far = 0.4f,
 
         .w_color_fade_enabled = true,
         .w_color_num_segments = 24,
-        .w_color_dist_near = 0.001f,
-        .w_color_dist_far = 0.9f,
+        .w_color_dist_near = 0.f,
+        .w_color_dist_far = 0.025f,
         .w_color_near = (Color){255, 220, 80, 255},
         .w_color_far  = (Color){40, 60, 220, 255},
 
         .w_thick_fade_enabled = true,
         .w_thick_num_segments = 24,
-        .w_thick_dist_near = 0.1f,
-        .w_thick_dist_far = 2.0f,
-        .w_thick_near = 0.08f,
+        .w_thick_dist_near = 0.3f,
+        .w_thick_dist_far = 5.0f,
+        .w_thick_near = 0.06f,
         .w_thick_far = 0.02f,
     };
 }
@@ -461,7 +489,7 @@ void cma_convert_to_bool(const ConsoleMsgArg* arg, bool* out)
             cmatc_float_to_bool(arg->get.float_value, out);
             return;
         case CMAT_STRING:
-            cmatc_string_to_bool(arg->get.string_value, out);
+            cmatc_string_to_bool((char*)arg->get.string_value, out);
             return;
         default:
             return;
@@ -482,7 +510,7 @@ void cma_convert_to_int(const ConsoleMsgArg* arg, int64_t* out)
             cmatc_float_to_int(arg->get.float_value, out);
             return;
         case CMAT_STRING:
-            cmatc_string_to_int(arg->get.string_value, out);
+            cmatc_string_to_int((char*)arg->get.string_value, out);
             return;
         default:
             return;
@@ -503,7 +531,7 @@ void cma_convert_to_float(const ConsoleMsgArg* arg, float* out)
             *out = arg->get.float_value;
             return;
         case CMAT_STRING:
-            cmatc_string_to_float(arg->get.string_value, out);
+            cmatc_string_to_float((char*)arg->get.string_value, out);
             return;
         default:
             return;
@@ -771,30 +799,32 @@ ConsoleMsgSchema get_console_msg_schema(ConsoleMsgType type)
 {
     static const ConsoleMsgSchema SCHEMAS[CMT_COUNT] = {
 
-        [CMT_QUIT]  = { CMT_QUIT,  { "quit" },  1, {{ 0 }}, 0 },
-        [CMT_PLAY]  = { CMT_PLAY,  { "play" },  1, {{ 0 }}, 0 },
-        [CMT_PAUSE] = { CMT_PAUSE, { "pause" }, 1, {{ 0 }}, 0 },
+        [CMT_QUIT]  = { CMT_QUIT,  { "quit" },  1, { 0 }, 0 },
+        [CMT_PLAY]  = { CMT_PLAY,  { "play" },  1, { 0 }, 0 },
+        [CMT_PAUSE] = { CMT_PAUSE, { "pause" }, 1, { 0 }, 0 },
+        [CMT_RESET] = { CMT_RESET, { "reset" }, 1, { 0 }, 0 },
 
-        [CMT_CHANGE_VIEW_2D] = { CMT_CHANGE_VIEW_2D, { "view", "2d" }, 2, {{ 0 }}, 0 },
-        [CMT_CHANGE_VIEW_3D] = { CMT_CHANGE_VIEW_3D, { "view", "3d" }, 2, {{ 0 }}, 0 },
+        [CMT_CHANGE_VIEW_2D] = { CMT_CHANGE_VIEW_2D, { "view", "2d" }, 2, { 0 }, 0 },
+        [CMT_CHANGE_VIEW_3D] = { CMT_CHANGE_VIEW_3D, { "view", "3d" }, 2, { 0 }, 0 },
 
-        [CMT_SET_AXES_ENABLED] = { CMT_SET_AXES_ENABLED, { "axes" }, 1, { CMAT_BOOL }, 1 },
+        [CMT_TOGGLE_AXES] = { CMT_TOGGLE_AXES, { "axes" }, 1, { 0 }, 0 },
 
-        [CMT_TOGGLE_ROTATION_XY] = { CMT_TOGGLE_ROTATION_XY, { "rotate", "xy" }, 2, {{0}}, 0 },
-        [CMT_TOGGLE_ROTATION_XZ] = { CMT_TOGGLE_ROTATION_XZ, { "rotate", "xz" }, 2, {{0}}, 0 },
-        [CMT_TOGGLE_ROTATION_XW] = { CMT_TOGGLE_ROTATION_XW, { "rotate", "xw" }, 2, {{0}}, 0 },
-        [CMT_TOGGLE_ROTATION_YZ] = { CMT_TOGGLE_ROTATION_YZ, { "rotate", "yz" }, 2, {{0}}, 0 },
-        [CMT_TOGGLE_ROTATION_YW] = { CMT_TOGGLE_ROTATION_YW, { "rotate", "yw" }, 2, {{0}}, 0 },
-        [CMT_TOGGLE_ROTATION_ZW] = { CMT_TOGGLE_ROTATION_ZW, { "rotate", "zw" }, 2, {{0}}, 0 },
+        [CMT_TOGGLE_ROTATION_XY] = { CMT_TOGGLE_ROTATION_XY, { "rotate", "xy" }, 2, { 0 }, 0 },
+        [CMT_TOGGLE_ROTATION_XZ] = { CMT_TOGGLE_ROTATION_XZ, { "rotate", "xz" }, 2, { 0 }, 0 },
+        [CMT_TOGGLE_ROTATION_XW] = { CMT_TOGGLE_ROTATION_XW, { "rotate", "xw" }, 2, { 0 }, 0 },
+        [CMT_TOGGLE_ROTATION_YZ] = { CMT_TOGGLE_ROTATION_YZ, { "rotate", "yz" }, 2, { 0 }, 0 },
+        [CMT_TOGGLE_ROTATION_YW] = { CMT_TOGGLE_ROTATION_YW, { "rotate", "yw" }, 2, { 0 }, 0 },
+        [CMT_TOGGLE_ROTATION_ZW] = { CMT_TOGGLE_ROTATION_ZW, { "rotate", "zw" }, 2, { 0 }, 0 },
 
-        [CMT_SET_MODEL_TETRA] = { CMT_SET_MODEL_TETRA, { "model", "tetra" }, 2, {{ 0 }}, 0 },
-        [CMT_SET_MODEL_CUBE]  = { CMT_SET_MODEL_CUBE, { "model", "cube" }, 2, {{ 0 }}, 0 },
-        [CMT_SET_MODEL_OCT]   = { CMT_SET_MODEL_OCT, { "model", "oct" }, 2, {{ 0 }}, 0 },
-        [CMT_SET_MODEL_ICO]   = { CMT_SET_MODEL_ICO, { "model", "ico" }, 2, {{ 0 }}, 0 },
+        [CMT_SET_MODEL_TETRA] = { CMT_SET_MODEL_TETRA, { "model", "tetra" }, 2, { 0 }, 0 },
+        [CMT_SET_MODEL_CUBE]  = { CMT_SET_MODEL_CUBE, { "model", "cube" }, 2, { 0 }, 0 },
+        [CMT_SET_MODEL_OCT]   = { CMT_SET_MODEL_OCT, { "model", "oct" }, 2, { 0 }, 0 },
+        [CMT_SET_MODEL_ICO]   = { CMT_SET_MODEL_ICO, { "model", "ico" }, 2, { 0 }, 0 },
 
-        [CMT_SET_MODEL_5CELL] = { CMT_SET_MODEL_5CELL, { "model", "5cell" }, 2, {{ 0 }}, 0 },
-        [CMT_SET_MODEL_8CELL] = { CMT_SET_MODEL_8CELL, { "model", "8cell" }, 2, {{ 0 }}, 0 },
-        [CMT_SET_MODEL_24CELL] = { CMT_SET_MODEL_24CELL, { "model", "24cell" }, 2, {{ 0 }}, 0 },
+        [CMT_SET_MODEL_5CELL] = { CMT_SET_MODEL_5CELL, { "model", "5cell" }, 2, { 0 }, 0 },
+        [CMT_SET_MODEL_8CELL] = { CMT_SET_MODEL_8CELL, { "model", "8cell" }, 2, { 0 }, 0 },
+        [CMT_SET_MODEL_16CELL] = { CMT_SET_MODEL_16CELL, { "model", "16cell" }, 2, { 0 }, 0 },
+        [CMT_SET_MODEL_24CELL] = { CMT_SET_MODEL_24CELL, { "model", "24cell" }, 2, { 0 }, 0 },
 
         [CMT_SET_WFADE_ALPHA_ENABLE]   = { CMT_SET_WFADE_ALPHA_ENABLE,   { "wfade", "alpha" },             2, { CMAT_BOOL },                          1 },
         [CMT_SET_WFADE_ALPHA_RANGE]    = { CMT_SET_WFADE_ALPHA_RANGE,    { "wfade", "alpha", "range" },    3, { CMAT_FLOAT, CMAT_FLOAT },             2 },
@@ -841,6 +871,13 @@ ConsoleMsgResult cmh_pause(const ConsoleMsg* msg)
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
+ConsoleMsgResult cmh_reset(const ConsoleMsg* msg)
+{
+    // takes 0 arguments, ignores all that are given
+    app_reset();
+    return (ConsoleMsgResult){ CMRT_OK, "" };
+}
+
 ConsoleMsgResult cmh_change_view_2d(const ConsoleMsg* msg)
 {
     if (msg->type != CMT_CHANGE_VIEW_2D)
@@ -862,21 +899,55 @@ ConsoleMsgResult cmh_change_view_3d(const ConsoleMsg* msg)
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
-ConsoleMsgResult cmh_set_axes_enabled(const ConsoleMsg* msg)
+ConsoleMsgResult cmh_toggle_axes(const ConsoleMsg* msg)
 {
-    // takes 1 argument:
-    // enabled:bool - whether or not to show the axes
-    if (msg->type != CMT_SET_AXES_ENABLED)
+    // takes 0 arguments (for now)
+    if (msg->type != CMT_TOGGLE_AXES)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#734" };
     }
-    if (msg->num_args_received < 1)
-    {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "axes <on|off>" };
-    }
-    bool arg0;
-    cma_convert_to_bool(&msg->args[0], &arg0);
-    APP.settings.axes_enabled = arg0;
+
+    // if (msg->num_args_received == 1)
+    // {
+    //     // try to parse "all", "none", "local", "model", or "world" out of it
+    //
+    //     char str[CONSOLE_MSG_LEN];
+    //     cma_convert_to_string(&msg->args[0], str);
+    //
+    //     if (!strncasecmp(str, "local", 5) || !strncasecmp(str, "model", 5))
+    //     {
+    //         APP.settings.world_axes_enabled = false;
+    //         APP.settings.local_axes_enabled = true;
+    //         return (ConsoleMsgResult){ CMRT_OK, "" };
+    //     }
+    //     else if (!strncasecmp(str, "world", 5))
+    //     {
+    //         APP.settings.world_axes_enabled = true;
+    //         APP.settings.local_axes_enabled = false;
+    //         return (ConsoleMsgResult){ CMRT_OK, "" };
+    //     }
+    //     else if (!strncasecmp(str, "none", 4))
+    //     {
+    //         APP.settings.world_axes_enabled = false;
+    //         APP.settings.local_axes_enabled = false;
+    //         return (ConsoleMsgResult){ CMRT_OK, "" };
+    //     }
+    //     else if (!strncasecmp(str, "all", 3))
+    //     {
+    //         APP.settings.world_axes_enabled = true;
+    //         APP.settings.local_axes_enabled = true;
+    //         return (ConsoleMsgResult){ CMRT_OK, "" };
+    //     }
+    // }
+
+    bool* world = &APP.settings.world_axes_enabled;
+    bool* local = &APP.settings.local_axes_enabled;
+
+    if (!*world && !*local)       { *world = true;  *local = false; }
+    else if (*world && !*local)   { *world = false; *local = true;  }
+    else if (!*world && *local)   { *world = true;  *local = true;  }
+    else                          { *world = false; *local = false; }
+
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
@@ -997,6 +1068,16 @@ ConsoleMsgResult cmh_set_model_8cell(const ConsoleMsg* msg)
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#633" };
     }
     app_set_model(MT_8CELL);
+    return (ConsoleMsgResult){ CMRT_OK, "" };
+}
+
+ConsoleMsgResult cmh_set_model_16cell(const ConsoleMsg* msg)
+{
+    if (msg->type != CMT_SET_MODEL_16CELL)
+    {
+        return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#1044" };
+    }
+    app_set_model(MT_16CELL);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
@@ -1320,48 +1401,19 @@ void app_init()
     console_gui_clear_autofill_entries();
     APP.console_gui_focused = false;
 
-    APP.view.axes.x = (Vector3){ 1, 0, 0 };
-    APP.view.axes.y = (Vector3){ 0, 1, 0 };
-    APP.view.axes.z = (Vector3){ 0, 0, 1 };
-    APP.view.axes.w = Vector3Normalize((Vector3){1, 1, 1});
-
-    APP.view.rotation.xy.enabled = false;
-    APP.view.rotation.xy.speed = 0.25f;
-    APP.view.rotation.xz.enabled = false;
-    APP.view.rotation.xz.speed = 0.25f;
-    APP.view.rotation.xw.enabled = false;
-    APP.view.rotation.xw.speed = 0.25f;
-    APP.view.rotation.yz.enabled = false;
-    APP.view.rotation.yz.speed = 0.25f;
-    APP.view.rotation.yw.enabled = false;
-    APP.view.rotation.yw.speed = 0.25f;
-    APP.view.rotation.zw.enabled = false;
-    APP.view.rotation.zw.speed = 0.25f;
-
-    APP.view.camera_control.mode = CM_3D_ORBITAL;
-    APP.view.camera_control.orbital_yaw = 0.0f;
-    APP.view.camera_control.orbital_pitch = 0.3f;
-    APP.view.camera_control.orbital_radius = 10.0f;
-    APP.view.camera_control.ortho_zoom = 4.0f;
-    APP.view.camera_control.ortho_view_dir = (Vector3){0, 0, -1};
-
-    APP.view.camera.fovy = 45.0f;
-    APP.view.camera.projection = CAMERA_PERSPECTIVE;
-
-    app_set_model(MT_5CELL);
-
-    APP.settings = get_settings_max_fade();
+    atomic_store(&APP.is_exiting, 0);
 
     // init the console message handlers
 
     APP.cmh[CMT_QUIT]                       = cmh_quit;
     APP.cmh[CMT_PLAY]                       = cmh_play;
     APP.cmh[CMT_PAUSE]                      = cmh_pause;
+    APP.cmh[CMT_RESET]                      = cmh_reset;
 
     APP.cmh[CMT_CHANGE_VIEW_2D]             = cmh_change_view_2d;
     APP.cmh[CMT_CHANGE_VIEW_3D]             = cmh_change_view_3d;
 
-    APP.cmh[CMT_SET_AXES_ENABLED]           = cmh_set_axes_enabled;
+    APP.cmh[CMT_TOGGLE_AXES]                = cmh_toggle_axes;
 
     APP.cmh[CMT_TOGGLE_ROTATION_XY]         = cmh_toggle_rotation_xy;
     APP.cmh[CMT_TOGGLE_ROTATION_XZ]         = cmh_toggle_rotation_xz;
@@ -1377,6 +1429,7 @@ void app_init()
 
     APP.cmh[CMT_SET_MODEL_5CELL]            = cmh_set_model_5cell;
     APP.cmh[CMT_SET_MODEL_8CELL]            = cmh_set_model_8cell;
+    APP.cmh[CMT_SET_MODEL_16CELL]           = cmh_set_model_16cell;
     APP.cmh[CMT_SET_MODEL_24CELL]           = cmh_set_model_24cell;
 
     APP.cmh[CMT_SET_WFADE_ALPHA_ENABLE]     = cmh_set_wfade_alpha_enable;
@@ -1397,9 +1450,53 @@ void app_init()
     APP.cmh[CMT_SET_WFADE_THICK_NEAR]       = cmh_set_wfade_thick_near;
     APP.cmh[CMT_SET_WFADE_THICK_FAR]        = cmh_set_wfade_thick_far;
 
-    atomic_store(&APP.is_exiting, 0);
-
     cmq_init();
+
+    // init all the rest of the simulation data to the defaults
+    app_reset();
+}
+
+void app_reset()
+{
+    atomic_store(&APP.is_paused, 0);
+
+    APP.view.axes.x = (Vector3){ 1, 0, 0 };
+    APP.view.axes.y = (Vector3){ 0, 1, 0 };
+    APP.view.axes.z = (Vector3){ 0, 0, 1 };
+    APP.view.axes.w = Vector3Normalize((Vector3){1, 1, 1});
+
+    APP.view.rotation.xy.enabled = false;
+    APP.view.rotation.xy.speed = 0.33f;
+    APP.view.rotation.xy.angle = 0.0f;
+    APP.view.rotation.xz.enabled = false;
+    APP.view.rotation.xz.speed = 0.33f;
+    APP.view.rotation.xz.angle = 0.0f;
+    APP.view.rotation.xw.enabled = false;
+    APP.view.rotation.xw.speed = 0.18f;
+    APP.view.rotation.xw.angle = 0.0f;
+    APP.view.rotation.yz.enabled = false;
+    APP.view.rotation.yz.speed = 0.33f;
+    APP.view.rotation.yz.angle = 0.0f;
+    APP.view.rotation.yw.enabled = false;
+    APP.view.rotation.yw.speed = 0.18f;
+    APP.view.rotation.yw.angle = 0.0f;
+    APP.view.rotation.zw.enabled = false;
+    APP.view.rotation.zw.speed = 0.18f;
+    APP.view.rotation.zw.angle = 0.0f;
+
+    APP.view.camera_control.mode = CM_3D_ORBITAL;
+    APP.view.camera_control.orbital_yaw = -0.55f;
+    APP.view.camera_control.orbital_pitch = 0.37f;
+    APP.view.camera_control.orbital_radius = 9.0f;
+    APP.view.camera_control.ortho_zoom = 4.0f;
+    APP.view.camera_control.ortho_view_dir = (Vector3){0, 0, -1};
+
+    APP.view.camera.fovy = 45.0f;
+    APP.view.camera.projection = CAMERA_PERSPECTIVE;
+
+    app_set_model(MT_CUBE);
+
+    APP.settings = get_settings_max_fade();
 }
 
 void app_run()
@@ -1481,7 +1578,7 @@ void app_run()
             if (APP.view.rotation.zw.enabled) APP.view.rotation.zw.angle += APP.view.rotation.zw.speed * GetFrameTime();
         }
 
-        Vector4 rotated[APP.model.mesh.vertex_count];
+        Vector4 rotated[1024];
         for (int i = 0; i < APP.model.mesh.vertex_count; i += 1)
         {
             Vector4 v = APP.model.mesh.vertices[i];
@@ -1535,7 +1632,7 @@ void app_run()
         BeginMode3D(APP.view.camera);
 
         // draw xyzw axes
-        if (APP.settings.axes_enabled)
+        if (APP.settings.world_axes_enabled)
         {
             Vector3 x_start = Vector3Scale(APP.view.axes.x, AXIS_MAGNITUDE);
             Vector3 x_end = Vector3Scale(APP.view.axes.x, -AXIS_MAGNITUDE);
@@ -1555,40 +1652,55 @@ void app_run()
         }
 
         // draw the model axes
-        if (APP.settings.axes_enabled)
+        if (APP.settings.local_axes_enabled)
         {
-            float scale_factor = 0.33f;
+            float scale_factor = 0.25f;
 
-            Vector4 x_start_4d = { APP.model.axes.x.x, APP.model.axes.x.y, APP.model.axes.x.z, APP.model.axes.x.w };
-            Vector4 x_end_4d   = { -x_start_4d.x, -x_start_4d.y, -x_start_4d.z, -x_start_4d.w };
-            Vector3 x_start = Vector3Scale(projection4(x_start_4d), scale_factor);
-            Vector3 x_end = Vector3Scale(projection4(x_end_4d), scale_factor);
-            DrawCylinderEx(x_start, x_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_X_AXIS_COLOR);
-            Vector4 y_start_4d = { APP.model.axes.y.x, APP.model.axes.y.y, APP.model.axes.y.z, APP.model.axes.y.w };
-            Vector4 y_end_4d   = { -y_start_4d.x, -y_start_4d.y, -y_start_4d.z, -y_start_4d.w };
-            Vector3 y_start = Vector3Scale(projection4(y_start_4d), scale_factor);
-            Vector3 y_end = Vector3Scale(projection4(y_end_4d), scale_factor);
-            DrawCylinderEx(y_start, y_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_Y_AXIS_COLOR);
-            Vector4 z_start_4d = { APP.model.axes.z.x, APP.model.axes.z.y, APP.model.axes.z.z, APP.model.axes.z.w };
-            Vector4 z_end_4d   = { -z_start_4d.x, -z_start_4d.y, -z_start_4d.z, -z_start_4d.w };
-            Vector3 z_start = Vector3Scale(projection4(z_start_4d), scale_factor);
-            Vector3 z_end = Vector3Scale(projection4(z_end_4d), scale_factor);
-            DrawCylinderEx(z_start, z_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_Z_AXIS_COLOR);
-            Vector4 w_start_4d = { APP.model.axes.w.x, APP.model.axes.w.y, APP.model.axes.w.z, APP.model.axes.w.w };
-            Vector4 w_end_4d   = { -w_start_4d.x, -w_start_4d.y, -w_start_4d.z, -w_start_4d.w };
-            Vector3 w_start = Vector3Scale(projection4(w_start_4d), scale_factor);
-            Vector3 w_end = Vector3Scale(projection4(w_end_4d), scale_factor);
-            DrawCylinderEx(w_start, w_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_W_AXIS_COLOR);
+            // if (APP.view.rotation.xy.enabled || APP.view.rotation.xz.enabled || APP.view.rotation.xw.enabled)
+            {
+                Vector4 x_start_4d = { APP.model.axes.x.x, APP.model.axes.x.y, APP.model.axes.x.z, APP.model.axes.x.w };
+                Vector4 x_end_4d   = { -x_start_4d.x, -x_start_4d.y, -x_start_4d.z, -x_start_4d.w };
+                Vector3 x_start = Vector3Scale(projection4(x_start_4d), scale_factor);
+                Vector3 x_end = Vector3Scale(projection4(x_end_4d), scale_factor);
+                DrawCylinderEx(x_start, x_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_X_AXIS_COLOR);
+                DrawSphere(x_start, ORIGIN_SIZE/3, LOCAL_X_AXIS_COLOR);
+                DrawSphere(x_end, ORIGIN_SIZE/3, LOCAL_X_AXIS_COLOR);
+            }
 
-            // draw the endpoints
-            DrawSphere(x_start, ORIGIN_SIZE/3, LOCAL_X_AXIS_COLOR);
-            DrawSphere(y_start, ORIGIN_SIZE/3, LOCAL_Y_AXIS_COLOR);
-            DrawSphere(z_start, ORIGIN_SIZE/3, LOCAL_Z_AXIS_COLOR);
-            DrawSphere(w_start, ORIGIN_SIZE/3, LOCAL_W_AXIS_COLOR);
-            DrawSphere(x_end, ORIGIN_SIZE/3, LOCAL_X_AXIS_COLOR);
-            DrawSphere(y_end, ORIGIN_SIZE/3, LOCAL_Y_AXIS_COLOR);
-            DrawSphere(z_end, ORIGIN_SIZE/3, LOCAL_Z_AXIS_COLOR);
-            DrawSphere(w_end, ORIGIN_SIZE/3, LOCAL_W_AXIS_COLOR);
+            // if (APP.view.rotation.xy.enabled || APP.view.rotation.yz.enabled || APP.view.rotation.yw.enabled)
+            {
+                Vector4 y_start_4d = { APP.model.axes.y.x, APP.model.axes.y.y, APP.model.axes.y.z, APP.model.axes.y.w };
+                Vector4 y_end_4d   = { -y_start_4d.x, -y_start_4d.y, -y_start_4d.z, -y_start_4d.w };
+                Vector3 y_start = Vector3Scale(projection4(y_start_4d), scale_factor);
+                Vector3 y_end = Vector3Scale(projection4(y_end_4d), scale_factor);
+                DrawCylinderEx(y_start, y_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_Y_AXIS_COLOR);
+                DrawSphere(y_start, ORIGIN_SIZE/3, LOCAL_Y_AXIS_COLOR);
+                DrawSphere(y_end, ORIGIN_SIZE/3, LOCAL_Y_AXIS_COLOR);
+            }
+
+            // if (APP.view.rotation.xz.enabled || APP.view.rotation.yz.enabled || APP.view.rotation.zw.enabled)
+            {
+                Vector4 z_start_4d = { APP.model.axes.z.x, APP.model.axes.z.y, APP.model.axes.z.z, APP.model.axes.z.w };
+                Vector4 z_end_4d   = { -z_start_4d.x, -z_start_4d.y, -z_start_4d.z, -z_start_4d.w };
+                Vector3 z_start = Vector3Scale(projection4(z_start_4d), scale_factor);
+                Vector3 z_end = Vector3Scale(projection4(z_end_4d), scale_factor);
+                DrawCylinderEx(z_start, z_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_Z_AXIS_COLOR);
+                DrawSphere(z_start, ORIGIN_SIZE/3, LOCAL_Z_AXIS_COLOR);
+                DrawSphere(z_end, ORIGIN_SIZE/3, LOCAL_Z_AXIS_COLOR);
+            }
+
+            // if (APP.view.rotation.xw.enabled || APP.view.rotation.yw.enabled || APP.view.rotation.zw.enabled)
+            {
+                Vector4 w_start_4d = { APP.model.axes.w.x, APP.model.axes.w.y, APP.model.axes.w.z, APP.model.axes.w.w };
+                Vector4 w_end_4d   = { -w_start_4d.x, -w_start_4d.y, -w_start_4d.z, -w_start_4d.w };
+                Vector3 w_start = Vector3Scale(projection4(w_start_4d), scale_factor);
+                Vector3 w_end = Vector3Scale(projection4(w_end_4d), scale_factor);
+                DrawCylinderEx(w_start, w_end, AXIS_THICKNESS/2, AXIS_THICKNESS/2, AXIS_SEGMENTS, LOCAL_W_AXIS_COLOR);
+                DrawSphere(w_start, ORIGIN_SIZE/3, LOCAL_W_AXIS_COLOR);
+                DrawSphere(w_end, ORIGIN_SIZE/3, LOCAL_W_AXIS_COLOR);
+            }
+
+            DrawSphere((Vector3){0, 0, 0}, ORIGIN_SIZE/2, ORIGIN_COLOR);
         }
 
         // draw the scene
@@ -1685,6 +1797,24 @@ void app_run()
             DrawTextEx(APP.ui_font, APP.console_gui_input, (Vector2){pos.x+20+prefix_size.x+5, pos.y+20}, font_size, 1.0f, BLACK);
         }
 
+        // draw debug information
+
+#if DEBUG_CAMERA_COORDS
+
+    if (APP.view.camera_control.mode == CM_3D_ORBITAL)
+    {
+        const char* camera_coord_text = TextFormat(
+            "Camera:\n"
+            "yaw: %f\n"
+            "pitch: %f\n"
+            "radius: %f\n",
+            APP.view.camera_control.orbital_yaw,
+            APP.view.camera_control.orbital_pitch,
+            APP.view.camera_control.orbital_radius);
+        DrawText(camera_coord_text, 50, 300, 20, RED);
+    }
+
+#endif
         EndDrawing();
     }
 }
@@ -1708,6 +1838,8 @@ void app_set_model(ModelType type)
     APP.model.axes.z = (Vector4){ 0, 0, 1, 0 };
     APP.model.axes.w = (Vector4){ 0, 0, 0, 1 };
 
+    // dont set rotation state in here, preserve it for comparing models
+
     switch(type)
     {
         case MT_TETRA:
@@ -1728,6 +1860,9 @@ void app_set_model(ModelType type)
         case MT_8CELL:
             APP.model.mesh = mesh4d_new_8cell();
             break;
+        case MT_16CELL:
+            APP.model.mesh = mesh4d_new_16cell();
+            break;
         case MT_24CELL:
             APP.model.mesh = mesh4d_new_24cell();
             break;
@@ -1746,21 +1881,27 @@ void draw_line4(Vector4 p0, Vector4 p1)
     Vector3 cam_pos = APP.view.camera.position;
     Color flat_color = APP.settings.w_color_near;
 
-    int n = 1;
-    if (color_on)
-    {
-        n = APP.settings.w_color_num_segments;
-    }
+    // number of segments for the line
+    // int n = 1;
+    // if (color_on)
+    // {
+    //     n = APP.settings.w_color_num_segments;
+    // }
+    //
+    // if (alpha_on && APP.settings.w_alpha_num_segments > n)
+    // {
+    //     n = APP.settings.w_alpha_num_segments;
+    // }
+    //
+    // if (thick_on && APP.settings.w_thick_num_segments > n)
+    // {
+    //     n = APP.settings.w_thick_num_segments;
+    // }
 
-    if (alpha_on && APP.settings.w_alpha_num_segments > n)
-    {
-        n = APP.settings.w_alpha_num_segments;
-    }
-
-    if (thick_on && APP.settings.w_thick_num_segments > n)
-    {
-        n = APP.settings.w_thick_num_segments;
-    }
+    // TODO make a setting for this, "wfade thick segments auto" +4color and alpha
+    // TODO turn this 0.05 into a number that tracks the # of edges to speed up rendering
+    // this one doesn't have to be a setting, (makes edges less accurate on 600cells)
+    int n = (int) roundf(Vector4Distance(p0, p1) / 0.01f);
 
     float first_width = APP.settings.w_thick_near;
     Color first_color = flat_color;
@@ -2137,6 +2278,7 @@ void console_gui_refresh_autofill()
 
         // static commands (known at compile time)
         "quit",
+        "reset",
 
         "wfade thick far <t:float>",
         "wfade thick near <t:float>",
@@ -2166,10 +2308,14 @@ void console_gui_refresh_autofill()
         "view 3d",
         "view 2d",
 
-        "axes off",
-        "axes on",
+        // "axes world",
+        // "axes model",
+        // "axes none",
+        // "axes all",
+        "axes",
 
         "model 24cell",
+        "model 16cell",
         "model 8cell",
         "model 5cell",
 
