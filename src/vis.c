@@ -1381,6 +1381,7 @@ void app_init()
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(1280, 720, "4vis");
+    SetWindowMinSize(600, 400);
     SetExitKey(0);
     SetTargetFPS(60);
     MaximizeWindow();
@@ -1695,6 +1696,7 @@ void app_run()
         }
 
         // draw the scene
+        rlDisableDepthMask();
         BeginBlendMode(BLEND_ALPHA);
         for (int e = 0; e < APP.model.mesh.edge_count; e += 1) {
             int i0 = APP.model.mesh.edges[e][0];
@@ -1703,6 +1705,7 @@ void app_run()
         }
 
         EndBlendMode();
+        rlEnableDepthMask();
         EndMode3D();
 
         // draw 2d overlays
@@ -1788,13 +1791,16 @@ void app_run()
             DrawTextEx(APP.ui_font, APP.console_gui_input, (Vector2){pos.x+20+prefix_size.x+5, pos.y+20}, font_size, 1.0f, BLACK);
         }
 
-        // draw the w-fade display
+        // draw the w-fade display : ALPHA
         {
+            Vector2 offset = {0, 10};
             int inner_width = 320;
             int inner_height = 90;
             int border_thick = 12;
             int font_size = 30;
-            Vector2 tl = { GetScreenWidth() - (inner_width + (border_thick * 2)), border_thick + 10 };
+            Vector2 tl = {
+                .x = GetScreenWidth() - (inner_width + (border_thick * 2)) + offset.x,
+                .y = border_thick + offset.y};
 
             Rectangle border_rec = { tl.x, tl.y,
                 inner_width + border_thick, inner_height + border_thick};
@@ -1806,38 +1812,249 @@ void app_run()
             DrawRectangleRounded(border_rec, 0.3, 10, border_color);
             DrawRectangleRounded(fill_rec, 0.3, 10, fill_color);
 
-            Vector2 line_start = {tl.x + 35, tl.y + (inner_height/2)};
-            Vector2 line_end = {tl.x + inner_width - 35, tl.y + (inner_height/2)};
+            float total_content_height = (font_size * 2) + 12;
+            float top_text_y = fill_rec.y + ((fill_rec.height - total_content_height) / 2.0f);
+            float line_y = top_text_y + font_size + 6;
+            float bottom_text_y = line_y + 6;
 
-            DrawLineEx(line_start, line_end, 5.0f, WORLD_W_AXIS_COLOR);
+            Vector2 line_start = {tl.x + 35, line_y};
+            Vector2 line_end = {tl.x + inner_width - 35, line_y};
+
+            {
+                // draw the alpha fade line
+                int h = 8;
+                float r = 4.0f;
+                Color start = Fade(LIGHTGRAY, APP.settings.w_alpha_near);
+                Color end = Fade(LIGHTGRAY, APP.settings.w_alpha_far);
+
+                if (!APP.settings.w_alpha_fade_enabled)
+                {
+                    start = LIGHTGRAY;
+                    end = start;
+
+                    DrawRectangle((int)line_start.x, (int)(line_start.y - r), (int)(line_end.x - line_start.x), h, start);
+                    DrawCircleSector((Vector2){ line_start.x, line_start.y }, r, 90.0f, 270.0f, 16, start);
+                    DrawCircleSector((Vector2){ line_end.x, line_end.y }, r, 270.0f, 450.0f, 16, end);
+                }
+                else
+                {
+                    BeginBlendMode(BLEND_ALPHA);
+                    DrawRectangleGradientH((int)line_start.x, (int)(line_start.y - r), (int)(line_end.x - line_start.x), h, start, end);
+                    DrawCircleSector((Vector2){ line_start.x, line_start.y }, r, 90.0f, 270.0f, 16, start);
+                    DrawCircleSector((Vector2){ line_end.x, line_end.y }, r, 270.0f, 450.0f, 16, end);
+                    EndBlendMode();
+                }
+            }
 
             Vector2 near_text_pos = {
                 line_start.x - 13,
-                line_start.y - (font_size + 10)
+                top_text_y
             };
 
-            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_dist_near),
-                        near_text_pos, font_size, 1.0f, LOCAL_W_AXIS_COLOR);
-
-            near_text_pos.y += (font_size + 20);
-
             DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_near),
+                        near_text_pos, font_size, 1.0f, WORLD_W_AXIS_COLOR);
+
+            near_text_pos.y = bottom_text_y;
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_dist_near),
                         near_text_pos, font_size, 1.0f, (Color){30,30,30,255});
 
             Vector2 far_text_pos = {
-                line_end.x - MeasureTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_dist_far), font_size, 1.0f).x + 13,
-                line_end.y - (font_size + 10)
+                line_end.x - MeasureTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_far), font_size, 1.0f).x + 13,
+                top_text_y
             };
 
-            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_dist_far),
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_far),
                         far_text_pos, font_size, 1.0f, LOCAL_W_AXIS_COLOR);
 
-            far_text_pos.x = line_end.x - MeasureTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_far), font_size, 1.0f).x + 13;
-            far_text_pos.y += (font_size + 20);
+            far_text_pos.x = line_end.x - MeasureTextEx(APP.ui_font,
+                TextFormat("%g", APP.settings.w_alpha_dist_far),
+                    font_size, 1.0f).x + 13;
+            far_text_pos.y = bottom_text_y;
 
-            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_far),
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_dist_far),
                         far_text_pos, font_size, 1.0f, (Color){30,30,30,255});
+        }
+        // draw the w-fade display : COLOR
+        {
+            Vector2 offset = {0, 120};
+            int inner_width = 320;
+            int inner_height = 90;
+            int border_thick = 12;
+            int font_size = 30;
+            Vector2 tl = {
+                .x = GetScreenWidth() - (inner_width + (border_thick * 2)) + offset.x,
+                .y = border_thick + offset.y};
 
+            Rectangle border_rec = { tl.x, tl.y,
+                inner_width + border_thick, inner_height + border_thick};
+            Rectangle fill_rec = { tl.x+(border_thick/2), tl.y+(border_thick/2), inner_width, inner_height };
+
+            Color border_color = GUI_COLOR_BORDER_DARK;
+            Color fill_color = GUI_COLOR_FILL_DARK;
+
+            DrawRectangleRounded(border_rec, 0.3, 10, border_color);
+            DrawRectangleRounded(fill_rec, 0.3, 10, fill_color);
+
+            float total_content_height = (font_size * 2) + 12;
+            float top_text_y = fill_rec.y + ((fill_rec.height - total_content_height) / 2.0f);
+            float line_y = top_text_y + font_size + 6;
+            float bottom_text_y = line_y + 6;
+
+            Vector2 line_start = {tl.x + 35, line_y};
+            Vector2 line_end = {tl.x + inner_width - 35, line_y};
+
+            {
+                // draw the color fade line
+                int h = 8;
+                float r = 4.0f;
+                Color start = APP.settings.w_color_near;
+                Color end = APP.settings.w_color_far;
+
+                if (!APP.settings.w_color_fade_enabled)
+                {
+                    end = start;
+                }
+
+                BeginBlendMode(BLEND_ALPHA);
+                DrawRectangleGradientH((int)line_start.x, (int)(line_start.y - r),
+                    (int)(line_end.x - line_start.x), h, start, end);
+                DrawCircleSector((Vector2){ line_start.x, line_start.y }, r, 90.0f, 270.0f, 16, start);
+                DrawCircleSector((Vector2){ line_end.x, line_end.y }, r, 270.0f, 450.0f, 16, end);
+                EndBlendMode();
+            }
+
+            Vector2 near_text_pos = {
+                line_start.x - 13,
+                top_text_y
+            };
+
+            char color_str[8];
+            rgb_to_hex(APP.settings.w_color_near.r,
+                       APP.settings.w_color_near.g,
+                       APP.settings.w_color_near.b,
+                       color_str);
+            DrawTextEx(APP.ui_font, TextFormat("%.*s", 8, color_str),
+                        near_text_pos, font_size, 1.0f, WORLD_W_AXIS_COLOR);
+
+            near_text_pos.y = bottom_text_y;
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_color_dist_near),
+                        near_text_pos, font_size, 1.0f, (Color){30,30,30,255});
+
+            Vector2 text_size = MeasureTextEx(APP.ui_font,
+                TextFormat("%g", APP.settings.w_color_far),
+                font_size, 1.0f);
+            Vector2 far_text_pos = {
+                line_end.x - (text_size.x/2) + 13,
+                top_text_y
+            };
+
+            rgb_to_hex(APP.settings.w_color_far.r,
+                APP.settings.w_color_far.g,
+                APP.settings.w_color_far.b,
+                color_str);
+            DrawTextEx(APP.ui_font, TextFormat("%.*s", 8, color_str),
+                far_text_pos, font_size, 1.0f, LOCAL_W_AXIS_COLOR);
+
+            text_size = MeasureTextEx(APP.ui_font,
+                TextFormat("%g", APP.settings.w_color_dist_far),
+                font_size, 1.0f);
+
+            far_text_pos.x = line_end.x - text_size.x + 13;
+            far_text_pos.y = bottom_text_y;
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_color_dist_far),
+                        far_text_pos, font_size, 1.0f, (Color){30,30,30,255});
+        }
+        // draw the w-fade display : THICK
+        {
+            Vector2 offset = {0, 230};
+            int inner_width = 320;
+            int inner_height = 90;
+            int border_thick = 12;
+            int font_size = 30;
+            Vector2 tl = {
+                .x = GetScreenWidth() - (inner_width + (border_thick * 2)) + offset.x,
+                .y = border_thick + offset.y};
+
+            Rectangle border_rec = { tl.x, tl.y,
+                inner_width + border_thick, inner_height + border_thick};
+            Rectangle fill_rec = { tl.x+(border_thick/2), tl.y+(border_thick/2), inner_width, inner_height };
+
+            Color border_color = GUI_COLOR_BORDER_DARK;
+            Color fill_color = GUI_COLOR_FILL_DARK;
+
+            DrawRectangleRounded(border_rec, 0.3, 10, border_color);
+            DrawRectangleRounded(fill_rec, 0.3, 10, fill_color);
+
+            float total_content_height = (font_size * 2) + 12;
+            float top_text_y = fill_rec.y + ((fill_rec.height - total_content_height) / 2.0f);
+            float line_y = top_text_y + font_size + 6;
+            float bottom_text_y = line_y + 6;
+
+            Vector2 line_start = {tl.x + 35, line_y};
+            Vector2 line_end = {tl.x + inner_width - 35, line_y};
+
+            {
+                // draw the thick fade line with constant 6:1 thickness ratio
+                float r_start = 6.0f;
+                float r_end   = 1.0f;
+
+                if (!APP.settings.w_thick_fade_enabled)
+                {
+                    r_start = 4.0f;
+                    r_end = 4.0f;
+                }
+
+                Color start = GUI_COLOR_BORDER_DARK;
+                Color end   = GUI_COLOR_BORDER_DARK;
+
+                BeginBlendMode(BLEND_ALPHA);
+
+                Vector2 p1 = { line_start.x, line_start.y - r_start };
+                Vector2 p2 = { line_start.x, line_start.y + r_start };
+                Vector2 p3 = { line_end.x,   line_end.y + r_end };
+                Vector2 p4 = { line_end.x,   line_end.y - r_end };
+
+                DrawTriangle(p1, p2, p3, start);
+                DrawTriangle(p1, p3, p4, start);
+
+                DrawCircleSector((Vector2){ line_start.x, line_start.y }, r_start, 90.0f, 270.0f, 16, start);
+                DrawCircleSector((Vector2){ line_end.x, line_end.y }, r_end, 270.0f, 450.0f, 16, end);
+
+                EndBlendMode();
+            }
+
+            Vector2 near_text_pos = {
+                line_start.x - 13,
+                top_text_y
+            };
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_thick_near),
+                        near_text_pos, font_size, 1.0f, WORLD_W_AXIS_COLOR);
+
+            near_text_pos.y = bottom_text_y;
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_alpha_dist_near),
+                        near_text_pos, font_size, 1.0f, (Color){30,30,30,255});
+
+            Vector2 far_text_pos = {
+                line_end.x - MeasureTextEx(APP.ui_font,
+                    TextFormat("%g", APP.settings.w_thick_far),
+                        font_size, 1.0f).x + 13,
+                top_text_y
+            };
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_thick_far),
+                        far_text_pos, font_size, 1.0f, LOCAL_W_AXIS_COLOR);
+
+            far_text_pos.x = line_end.x - MeasureTextEx(APP.ui_font,
+                TextFormat("%g", APP.settings.w_thick_dist_far), font_size, 1.0f).x + 13;
+            far_text_pos.y = bottom_text_y;
+
+            DrawTextEx(APP.ui_font, TextFormat("%g", APP.settings.w_thick_dist_far),
+                        far_text_pos, font_size, 1.0f, (Color){30,30,30,255});
         }
 
         // draw debug information
@@ -2554,4 +2771,14 @@ int strncasecmp(const char* s1, const char* s2, size_t n)
     }
 
     return 0;
+}
+
+// other
+
+void rgb_to_hex(uint8_t r, uint8_t g, uint8_t b, char* out) {
+    if (!out)
+    {
+        return;
+    }
+    snprintf(out, 8, "#%02x%02x%02x", r, g, b);
 }

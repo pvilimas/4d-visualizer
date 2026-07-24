@@ -17,6 +17,7 @@
 
 #include "raylib.h"
 #include "raymath.h"
+#include "rlgl.h"
 
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #define MAX(x,y) ((x)>(y)?(x):(y))
@@ -571,6 +572,11 @@ void toggle_rotation_zw();
 
 int strcasecmp(const char* s1, const char* s2);
 int strncasecmp(const char* s1, const char* s2, size_t n);
+
+// other
+
+// takes a char[8], writes a string like #ff00ff
+void rgb_to_hex(uint8_t r, uint8_t g, uint8_t b, char* out);
 
 // ------------------------------ DEBUG FLAGS ------------------------------ //
 
