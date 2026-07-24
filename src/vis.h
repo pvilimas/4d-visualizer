@@ -198,33 +198,36 @@ typedef struct {
     // which camera mode to display the simulation in
     CameraMode4D camera_mode;
 
-    // rendering settings
-    bool world_axes_enabled;     // enable/disable world axes
-    bool local_axes_enabled;     // enable/disable local axes for the model
+    Color background_color;     // background color to fill the world
+
+    bool world_axes_enabled;    // enable/disable world axes
+    bool local_axes_enabled;    // enable/disable local axes for the model
+
+    bool hud_enabled;           // enable/disable the hud
 
     // fade alpha linearly along the w-axis (further = more transparent)
-    bool w_alpha_fade_enabled;   // enable/disable alpha fade
-    int w_alpha_num_segments;    // how many segments to split each line into
-    float w_alpha_dist_near;     // w-distance where alpha = w_alpha_near
-    float w_alpha_dist_far;      // w-distance where alpha = w_alpha_far
-    float w_alpha_near;          // alpha value at w_alpha_dist_near
-    float w_alpha_far;           // alpha value at w_alpha_dist_far
+    bool w_alpha_fade_enabled;  // enable/disable alpha fade
+    int w_alpha_num_segments;   // how many segments to split each line into
+    float w_alpha_dist_near;    // w-distance where alpha = w_alpha_near
+    float w_alpha_dist_far;     // w-distance where alpha = w_alpha_far
+    float w_alpha_near;         // alpha value at w_alpha_dist_near
+    float w_alpha_far;          // alpha value at w_alpha_dist_far
 
     // interpolate color linearly along the w-axis (further = towards color_far)
-    bool w_color_fade_enabled;   // enable/disable color fade
-    int w_color_num_segments;    // how many segments to split each line into
-    float w_color_dist_near;     // w-distance where color = w_color_near
-    float w_color_dist_far;      // w-distance where color = w_color_far
-    Color w_color_near;          // color at w_color_dist_near
-    Color w_color_far;           // color at w_color_dist_far
+    bool w_color_fade_enabled;  // enable/disable color fade
+    int w_color_num_segments;   // how many segments to split each line into
+    float w_color_dist_near;    // w-distance where color = w_color_near
+    float w_color_dist_far;     // w-distance where color = w_color_far
+    Color w_color_near;         // color at w_color_dist_near
+    Color w_color_far;          // color at w_color_dist_far
 
     // fade thickness linearly along the w-axis (further = thinner)
-    bool w_thick_fade_enabled;   // enable/disable thickness fade
-    int w_thick_num_segments;    // how many segments to split each line into
-    float w_thick_dist_near;     // w-distance where thickness = w_thick_near
-    float w_thick_dist_far;      // w-distance where thickness = w_thick_far
-    float w_thick_near;          // thickness value at w_thick_dist_near
-    float w_thick_far;           // thickness value at w_thick_dist_far
+    bool w_thick_fade_enabled;  // enable/disable thickness fade
+    int w_thick_num_segments;   // how many segments to split each line into
+    float w_thick_dist_near;    // w-distance where thickness = w_thick_near
+    float w_thick_dist_far;     // w-distance where thickness = w_thick_far
+    float w_thick_near;         // thickness value at w_thick_dist_near
+    float w_thick_far;          // thickness value at w_thick_dist_far
 
 } Settings;
 
@@ -251,12 +254,17 @@ typedef enum {
 
     // simulation settings
 
+    // bg <r:int> <g:int> <b:int>
+    CMT_CHANGE_BGCOLOR,
+
     // view <2d|3d>
     CMT_CHANGE_VIEW_2D,
     CMT_CHANGE_VIEW_3D,
 
     // axes
     CMT_TOGGLE_AXES,
+    // hud
+    CMT_TOGGLE_HUD,
 
     // rotate <plane0:string> [plane1:string]
     CMT_TOGGLE_ROTATION_XY,
@@ -296,9 +304,9 @@ typedef enum {
     CMT_SET_WFADE_COLOR_RANGE,
     // wfade color segments <n:int>
     CMT_SET_WFADE_COLOR_SEGMENTS,
-    // wfade color near <r:float> <g:float> <b:float>
+    // wfade color near <r:int> <g:int> <b:int>
     CMT_SET_WFADE_COLOR_NEAR,
-    // wfade color far <r:float> <g:float> <b:float>
+    // wfade color far <r:int> <g:int> <b:int>
     CMT_SET_WFADE_COLOR_FAR,
 
     // wfade thick <enabled:bool>
@@ -424,10 +432,13 @@ ConsoleMsgResult cmh_pause(const ConsoleMsg* msg);                      // CMT_P
 
 ConsoleMsgResult cmh_reset(const ConsoleMsg* msg);                      // CMT_RESET
 
+ConsoleMsgResult cmh_change_bgcolor(const ConsoleMsg* msg);             // CMT_CHANGE_BGCOLOR
+
 ConsoleMsgResult cmh_change_view_2d(const ConsoleMsg* msg);             // CMT_CHANGE_VIEW_2D
 ConsoleMsgResult cmh_change_view_3d(const ConsoleMsg* msg);             // CMT_CHANGE_VIEW_3D
 
 ConsoleMsgResult cmh_set_axes_enabled(const ConsoleMsg* msg);           // CMT_SET_AXES_ENABLED
+ConsoleMsgResult cmh_toggle_hud(const ConsoleMsg* msg);                 // CMT_TOGGLE_HUD
 
 ConsoleMsgResult cmh_toggle_rotation_xy(const ConsoleMsg* msg);         // CMT_TOGGLE_ROTATION_XY
 ConsoleMsgResult cmh_toggle_rotation_xz(const ConsoleMsg* msg);         // CMT_TOGGLE_ROTATION_XZ

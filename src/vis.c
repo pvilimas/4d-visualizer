@@ -348,8 +348,12 @@ Settings get_settings_default()
 
         .camera_mode = CM_3D_ORBITAL,
 
+        .background_color = BLACK,
+
         .world_axes_enabled = true,
         .local_axes_enabled = false,
+
+        .hud_enabled = true,
 
         .w_alpha_fade_enabled = true,
         .w_alpha_num_segments = 16,
@@ -380,8 +384,12 @@ Settings get_settings_no_fade()
 
         .camera_mode = CM_3D_ORBITAL,
 
+        .background_color = BLACK,
+
         .world_axes_enabled = false,
         .local_axes_enabled = false,
+
+        .hud_enabled = true,
 
         .w_alpha_fade_enabled = false,
         .w_color_fade_enabled = false,
@@ -399,8 +407,12 @@ Settings get_settings_max_fade()
 
         .camera_mode = CM_3D_ORBITAL,
 
+        .background_color = BLACK,
+
         .world_axes_enabled = true,
         .local_axes_enabled = true,
+
+        .hud_enabled = true,
 
         .w_alpha_fade_enabled = true,
         .w_alpha_num_segments = 96,
@@ -418,10 +430,10 @@ Settings get_settings_max_fade()
 
         .w_thick_fade_enabled = true,
         .w_thick_num_segments = 96,
-        .w_thick_dist_near = 0.3f,
-        .w_thick_dist_far = 5.0f,
-        .w_thick_near = 0.06f,
-        .w_thick_far = 0.02f,
+        .w_thick_dist_near = 0.2f,
+        .w_thick_dist_far = 1.2f,
+        .w_thick_near = 0.1f,
+        .w_thick_far = 0.01f,
     };
 }
 
@@ -798,7 +810,10 @@ ConsoleMsgSchema get_console_msg_schema(ConsoleMsgType type)
         [CMT_CHANGE_VIEW_2D] = { CMT_CHANGE_VIEW_2D, { "view", "2d" }, 2, { 0 }, 0 },
         [CMT_CHANGE_VIEW_3D] = { CMT_CHANGE_VIEW_3D, { "view", "3d" }, 2, { 0 }, 0 },
 
+        [CMT_CHANGE_BGCOLOR] = { CMT_CHANGE_BGCOLOR, { "bgcolor" }, 1, { CMAT_INT, CMAT_INT, CMAT_INT }, 3 },
+
         [CMT_TOGGLE_AXES] = { CMT_TOGGLE_AXES, { "axes" }, 1, { 0 }, 0 },
+        [CMT_TOGGLE_HUD] = { CMT_TOGGLE_HUD, { "hud" }, 1, { 0 }, 0 },
 
         [CMT_TOGGLE_ROTATION_XY] = { CMT_TOGGLE_ROTATION_XY, { "rotate", "xy" }, 2, { 0 }, 0 },
         [CMT_TOGGLE_ROTATION_XZ] = { CMT_TOGGLE_ROTATION_XZ, { "rotate", "xz" }, 2, { 0 }, 0 },
@@ -817,23 +832,23 @@ ConsoleMsgSchema get_console_msg_schema(ConsoleMsgType type)
         [CMT_SET_MODEL_16CELL] = { CMT_SET_MODEL_16CELL, { "model", "16cell" }, 2, { 0 }, 0 },
         [CMT_SET_MODEL_24CELL] = { CMT_SET_MODEL_24CELL, { "model", "24cell" }, 2, { 0 }, 0 },
 
-        [CMT_SET_WFADE_ALPHA_ENABLE]   = { CMT_SET_WFADE_ALPHA_ENABLE,   { "wfade", "alpha" },             2, { CMAT_BOOL },                          1 },
-        [CMT_SET_WFADE_ALPHA_RANGE]    = { CMT_SET_WFADE_ALPHA_RANGE,    { "wfade", "alpha", "range" },    3, { CMAT_FLOAT, CMAT_FLOAT },             2 },
-        [CMT_SET_WFADE_ALPHA_SEGMENTS] = { CMT_SET_WFADE_ALPHA_SEGMENTS, { "wfade", "alpha", "segments" }, 3, { CMAT_INT },                           1 },
-        [CMT_SET_WFADE_ALPHA_NEAR]     = { CMT_SET_WFADE_ALPHA_NEAR,     { "wfade", "alpha", "near" },     3, { CMAT_FLOAT },                         1 },
-        [CMT_SET_WFADE_ALPHA_FAR]      = { CMT_SET_WFADE_ALPHA_FAR,      { "wfade", "alpha", "far" },      3, { CMAT_FLOAT },                         1 },
+        [CMT_SET_WFADE_ALPHA_ENABLE]   = { CMT_SET_WFADE_ALPHA_ENABLE,   { "fade", "alpha" },             2, { CMAT_BOOL },                          1 },
+        [CMT_SET_WFADE_ALPHA_RANGE]    = { CMT_SET_WFADE_ALPHA_RANGE,    { "fade", "alpha", "range" },    3, { CMAT_FLOAT, CMAT_FLOAT },             2 },
+        [CMT_SET_WFADE_ALPHA_SEGMENTS] = { CMT_SET_WFADE_ALPHA_SEGMENTS, { "fade", "alpha", "segments" }, 3, { CMAT_INT },                           1 },
+        [CMT_SET_WFADE_ALPHA_NEAR]     = { CMT_SET_WFADE_ALPHA_NEAR,     { "fade", "alpha", "near" },     3, { CMAT_FLOAT },                         1 },
+        [CMT_SET_WFADE_ALPHA_FAR]      = { CMT_SET_WFADE_ALPHA_FAR,      { "fade", "alpha", "far" },      3, { CMAT_FLOAT },                         1 },
 
-        [CMT_SET_WFADE_COLOR_ENABLE]   = { CMT_SET_WFADE_COLOR_ENABLE,   { "wfade", "color" },             2, { CMAT_BOOL },                          1 },
-        [CMT_SET_WFADE_COLOR_RANGE]    = { CMT_SET_WFADE_COLOR_RANGE,    { "wfade", "color", "range" },    3, { CMAT_FLOAT, CMAT_FLOAT },             2 },
-        [CMT_SET_WFADE_COLOR_SEGMENTS] = { CMT_SET_WFADE_COLOR_SEGMENTS, { "wfade", "color", "segments" }, 3, { CMAT_INT },                           1 },
-        [CMT_SET_WFADE_COLOR_NEAR]     = { CMT_SET_WFADE_COLOR_NEAR,     { "wfade", "color", "near" },     3, { CMAT_FLOAT, CMAT_FLOAT, CMAT_FLOAT }, 3 },
-        [CMT_SET_WFADE_COLOR_FAR]      = { CMT_SET_WFADE_COLOR_FAR,      { "wfade", "color", "far" },      3, { CMAT_FLOAT, CMAT_FLOAT, CMAT_FLOAT }, 3 },
+        [CMT_SET_WFADE_COLOR_ENABLE]   = { CMT_SET_WFADE_COLOR_ENABLE,   { "fade", "color" },             2, { CMAT_BOOL },                          1 },
+        [CMT_SET_WFADE_COLOR_RANGE]    = { CMT_SET_WFADE_COLOR_RANGE,    { "fade", "color", "range" },    3, { CMAT_FLOAT, CMAT_FLOAT },             2 },
+        [CMT_SET_WFADE_COLOR_SEGMENTS] = { CMT_SET_WFADE_COLOR_SEGMENTS, { "fade", "color", "segments" }, 3, { CMAT_INT },                           1 },
+        [CMT_SET_WFADE_COLOR_NEAR]     = { CMT_SET_WFADE_COLOR_NEAR,     { "fade", "color", "near" },     3, { CMAT_INT, CMAT_INT, CMAT_INT },       3 },
+        [CMT_SET_WFADE_COLOR_FAR]      = { CMT_SET_WFADE_COLOR_FAR,      { "fade", "color", "far" },      3, { CMAT_INT, CMAT_INT, CMAT_INT },       3 },
 
-        [CMT_SET_WFADE_THICK_ENABLE]   = { CMT_SET_WFADE_THICK_ENABLE,   { "wfade", "thick" },             2, { CMAT_BOOL },                          1 },
-        [CMT_SET_WFADE_THICK_RANGE]    = { CMT_SET_WFADE_THICK_RANGE,    { "wfade", "thick", "range" },    3, { CMAT_FLOAT, CMAT_FLOAT },             2 },
-        [CMT_SET_WFADE_THICK_SEGMENTS] = { CMT_SET_WFADE_THICK_SEGMENTS, { "wfade", "thick", "segments" }, 3, { CMAT_INT },                           1 },
-        [CMT_SET_WFADE_THICK_NEAR]     = { CMT_SET_WFADE_THICK_NEAR,     { "wfade", "thick", "near" },     3, { CMAT_FLOAT },                         1 },
-        [CMT_SET_WFADE_THICK_FAR]      = { CMT_SET_WFADE_THICK_FAR,      { "wfade", "thick", "far" },      3, { CMAT_FLOAT },                         1 },
+        [CMT_SET_WFADE_THICK_ENABLE]   = { CMT_SET_WFADE_THICK_ENABLE,   { "fade", "thick" },             2, { CMAT_BOOL },                          1 },
+        [CMT_SET_WFADE_THICK_RANGE]    = { CMT_SET_WFADE_THICK_RANGE,    { "fade", "thick", "range" },    3, { CMAT_FLOAT, CMAT_FLOAT },             2 },
+        [CMT_SET_WFADE_THICK_SEGMENTS] = { CMT_SET_WFADE_THICK_SEGMENTS, { "fade", "thick", "segments" }, 3, { CMAT_INT },                           1 },
+        [CMT_SET_WFADE_THICK_NEAR]     = { CMT_SET_WFADE_THICK_NEAR,     { "fade", "thick", "near" },     3, { CMAT_FLOAT },                         1 },
+        [CMT_SET_WFADE_THICK_FAR]      = { CMT_SET_WFADE_THICK_FAR,      { "fade", "thick", "far" },      3, { CMAT_FLOAT },                         1 },
     };
 
     return SCHEMAS[type];
@@ -866,6 +881,28 @@ ConsoleMsgResult cmh_reset(const ConsoleMsg* msg)
 {
     // takes 0 arguments, ignores all that are given
     app_reset();
+    return (ConsoleMsgResult){ CMRT_OK, "" };
+}
+
+ConsoleMsgResult cmh_change_bgcolor(const ConsoleMsg* msg)
+{
+    // takes 3 arguments:
+    // r:int, g:int, b:int - color at w_color_dist_near
+    if (msg->type != CMT_CHANGE_BGCOLOR)
+    {
+        return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#893" };
+    }
+    if (msg->num_args_received < 3)
+    {
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "bgcolor <r:int> <g:int> <b:int>" };
+    }
+    int64_t arg0;
+    int64_t arg1;
+    int64_t arg2;
+    cma_convert_to_int(&msg->args[0], &arg0);
+    cma_convert_to_int(&msg->args[1], &arg1);
+    cma_convert_to_int(&msg->args[2], &arg2);
+    APP.settings.background_color = (Color){ (unsigned char)arg0, (unsigned char)arg1, (unsigned char)arg2, 255 };
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
@@ -939,6 +976,16 @@ ConsoleMsgResult cmh_toggle_axes(const ConsoleMsg* msg)
     else if (!*world && *local)   { *world = true;  *local = true;  }
     else                          { *world = false; *local = false; }
 
+    return (ConsoleMsgResult){ CMRT_OK, "" };
+}
+
+ConsoleMsgResult cmh_toggle_hud(const ConsoleMsg* msg)
+{
+    if (msg->type != CMT_TOGGLE_HUD)
+    {
+        return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#950" };
+    }
+    APP.settings.hud_enabled = !APP.settings.hud_enabled;
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
@@ -1092,7 +1139,7 @@ ConsoleMsgResult cmh_set_wfade_alpha_enable(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 1)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade alpha <enabled:bool>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade alpha <enabled:bool>" };
     }
     bool arg0;
     cma_convert_to_bool(&msg->args[0], &arg0);
@@ -1111,7 +1158,7 @@ ConsoleMsgResult cmh_set_wfade_alpha_range(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 2)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade alpha range <w-near:float> <w-far:float>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade alpha range <w-near:float> <w-far:float>" };
     }
     float arg0;
     float arg1;
@@ -1132,7 +1179,7 @@ ConsoleMsgResult cmh_set_wfade_alpha_segments(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 1)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade alpha segments <n:int>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade alpha segments <n:int>" };
     }
     int64_t arg0;
     cma_convert_to_int(&msg->args[0], &arg0);
@@ -1150,7 +1197,7 @@ ConsoleMsgResult cmh_set_wfade_alpha_near(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 1)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade alpha near <a:float>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade alpha near <a:float>" };
     }
     float arg0;
     cma_convert_to_float(&msg->args[0], &arg0);
@@ -1168,7 +1215,7 @@ ConsoleMsgResult cmh_set_wfade_alpha_far(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 1)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade alpha far <a:float>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade alpha far <a:float>" };
     }
     float arg0;
     cma_convert_to_float(&msg->args[0], &arg0);
@@ -1186,7 +1233,7 @@ ConsoleMsgResult cmh_set_wfade_color_enable(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 1)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade color <enabled:bool>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade color <enabled:bool>" };
     }
     bool arg0;
     cma_convert_to_bool(&msg->args[0], &arg0);
@@ -1205,7 +1252,7 @@ ConsoleMsgResult cmh_set_wfade_color_range(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 2)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade color range <w-near:float> <w-far:float>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade color range <w-near:float> <w-far:float>" };
     }
     float arg0;
     float arg1;
@@ -1226,7 +1273,7 @@ ConsoleMsgResult cmh_set_wfade_color_segments(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 1)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade color segments <n:int>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade color segments <n:int>" };
     }
     int64_t arg0;
     cma_convert_to_int(&msg->args[0], &arg0);
@@ -1237,21 +1284,21 @@ ConsoleMsgResult cmh_set_wfade_color_segments(const ConsoleMsg* msg)
 ConsoleMsgResult cmh_set_wfade_color_near(const ConsoleMsg* msg)
 {
     // takes 3 arguments:
-    // r:float, g:float, b:float - color at w_color_dist_near
+    // r:int, g:int, b:int - color at w_color_dist_near
     if (msg->type != CMT_SET_WFADE_COLOR_NEAR)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#669" };
     }
     if (msg->num_args_received < 3)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade color near <r:float> <g:float> <b:float>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade color near <r:int> <g:int> <b:int>" };
     }
-    float arg0;
-    float arg1;
-    float arg2;
-    cma_convert_to_float(&msg->args[0], &arg0);
-    cma_convert_to_float(&msg->args[1], &arg1);
-    cma_convert_to_float(&msg->args[2], &arg2);
+    int64_t arg0;
+    int64_t arg1;
+    int64_t arg2;
+    cma_convert_to_int(&msg->args[0], &arg0);
+    cma_convert_to_int(&msg->args[1], &arg1);
+    cma_convert_to_int(&msg->args[2], &arg2);
     APP.settings.w_color_near = (Color){ (unsigned char)arg0, (unsigned char)arg1, (unsigned char)arg2, 255 };
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
@@ -1259,21 +1306,21 @@ ConsoleMsgResult cmh_set_wfade_color_near(const ConsoleMsg* msg)
 ConsoleMsgResult cmh_set_wfade_color_far(const ConsoleMsg* msg)
 {
     // takes 3 arguments:
-    // r:float, g:float, b:float - color at w_color_dist_far
+    // r:int, g:int, b:int - color at w_color_dist_far
     if (msg->type != CMT_SET_WFADE_COLOR_FAR)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#691" };
     }
     if (msg->num_args_received < 3)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade color far <r:float> <g:float> <b:float>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade color far <r:int> <g:int> <b:int>" };
     }
-    float arg0;
-    float arg1;
-    float arg2;
-    cma_convert_to_float(&msg->args[0], &arg0);
-    cma_convert_to_float(&msg->args[1], &arg1);
-    cma_convert_to_float(&msg->args[2], &arg2);
+    int64_t arg0;
+    int64_t arg1;
+    int64_t arg2;
+    cma_convert_to_int(&msg->args[0], &arg0);
+    cma_convert_to_int(&msg->args[1], &arg1);
+    cma_convert_to_int(&msg->args[2], &arg2);
     APP.settings.w_color_far = (Color){ (unsigned char)arg0, (unsigned char)arg1, (unsigned char)arg2, 255 };
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
@@ -1288,7 +1335,7 @@ ConsoleMsgResult cmh_set_wfade_thick_enable(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 1)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade thick <enabled:bool>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade thick <enabled:bool>" };
     }
     bool arg0;
     cma_convert_to_bool(&msg->args[0], &arg0);
@@ -1307,7 +1354,7 @@ ConsoleMsgResult cmh_set_wfade_thick_range(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 2)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade thick range <w-near:float> <w-far:float>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade thick range <w-near:float> <w-far:float>" };
     }
     float arg0;
     float arg1;
@@ -1328,7 +1375,7 @@ ConsoleMsgResult cmh_set_wfade_thick_segments(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 1)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade thick segments <n:int>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade thick segments <n:int>" };
     }
     int64_t arg0;
     cma_convert_to_int(&msg->args[0], &arg0);
@@ -1346,7 +1393,7 @@ ConsoleMsgResult cmh_set_wfade_thick_near(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 1)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade thick near <t:float>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade thick near <t:float>" };
     }
     float arg0;
     cma_convert_to_float(&msg->args[0], &arg0);
@@ -1364,7 +1411,7 @@ ConsoleMsgResult cmh_set_wfade_thick_far(const ConsoleMsg* msg)
     }
     if (msg->num_args_received < 1)
     {
-        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "wfade thick far <t:float>" };
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "fade thick far <t:float>" };
     }
     float arg0;
     cma_convert_to_float(&msg->args[0], &arg0);
@@ -1405,7 +1452,10 @@ void app_init()
     APP.cmh[CMT_CHANGE_VIEW_2D]             = cmh_change_view_2d;
     APP.cmh[CMT_CHANGE_VIEW_3D]             = cmh_change_view_3d;
 
+    APP.cmh[CMT_CHANGE_BGCOLOR]             = cmh_change_bgcolor;
+
     APP.cmh[CMT_TOGGLE_AXES]                = cmh_toggle_axes;
+    APP.cmh[CMT_TOGGLE_HUD]                 = cmh_toggle_hud;
 
     APP.cmh[CMT_TOGGLE_ROTATION_XY]         = cmh_toggle_rotation_xy;
     APP.cmh[CMT_TOGGLE_ROTATION_XZ]         = cmh_toggle_rotation_xz;
@@ -1620,8 +1670,19 @@ void app_run()
         APP.model.axes.w = w_axis;
 
         BeginDrawing();
-        ClearBackground(BLACK);
+        ClearBackground(APP.settings.background_color);
         BeginMode3D(APP.view.camera);
+
+        // draw the model
+        // rlDisableDepthMask();
+        BeginBlendMode(BLEND_ALPHA);
+        for (int e = 0; e < APP.model.mesh.edge_count; e += 1) {
+            int i0 = APP.model.mesh.edges[e][0];
+            int i1 = APP.model.mesh.edges[e][1];
+            draw_line4(rotated[i0], rotated[i1]);
+        }
+        EndBlendMode();
+        // rlEnableDepthMask();
 
         // draw xyzw axes
         if (APP.settings.world_axes_enabled)
@@ -1695,37 +1756,33 @@ void app_run()
             DrawSphere((Vector3){0, 0, 0}, ORIGIN_SIZE/2, ORIGIN_COLOR);
         }
 
-        // draw the scene
-        rlDisableDepthMask();
-        BeginBlendMode(BLEND_ALPHA);
-        for (int e = 0; e < APP.model.mesh.edge_count; e += 1) {
-            int i0 = APP.model.mesh.edges[e][0];
-            int i1 = APP.model.mesh.edges[e][1];
-            draw_line4(rotated[i0], rotated[i1]);
-        }
-
-        EndBlendMode();
-        rlEnableDepthMask();
         EndMode3D();
 
         // draw 2d overlays
 
         // draw XYZW axis highlights for rotation
-        DrawTextEx(APP.ui_font, "X", (Vector2){20, 20}, 50, 1.0f,
-            APP.view.rotation.xy.enabled || APP.view.rotation.xz.enabled || APP.view.rotation.xw.enabled
-                ? WORLD_X_AXIS_COLOR : LOCAL_X_AXIS_COLOR);
-        DrawTextEx(APP.ui_font, "Y", (Vector2){50, 20}, 50, 1.0f,
-            APP.view.rotation.xy.enabled || APP.view.rotation.yz.enabled || APP.view.rotation.yw.enabled
-                ? WORLD_Y_AXIS_COLOR : LOCAL_Y_AXIS_COLOR);
-        DrawTextEx(APP.ui_font, "Z", (Vector2){80, 20}, 50, 1.0f,
-            APP.view.rotation.xz.enabled || APP.view.rotation.yz.enabled || APP.view.rotation.zw.enabled
-                ? WORLD_Z_AXIS_COLOR : LOCAL_Z_AXIS_COLOR);
-        DrawTextEx(APP.ui_font, "W", (Vector2){110, 20}, 50, 1.0f,
-            APP.view.rotation.xw.enabled || APP.view.rotation.yw.enabled || APP.view.rotation.zw.enabled
-                ? WORLD_W_AXIS_COLOR : LOCAL_W_AXIS_COLOR);
+        if (APP.settings.hud_enabled)
+        {
+            DrawTextEx(APP.ui_font, "X", (Vector2){20, 20}, 50, 1.0f,
+                APP.view.rotation.xy.enabled || APP.view.rotation.xz.enabled || APP.view.rotation.xw.enabled
+                    ? WORLD_X_AXIS_COLOR
+                    : LOCAL_X_AXIS_COLOR);
+            DrawTextEx(APP.ui_font, "Y", (Vector2){50, 20}, 50, 1.0f,
+                APP.view.rotation.xy.enabled || APP.view.rotation.yz.enabled || APP.view.rotation.yw.enabled
+                    ? WORLD_Y_AXIS_COLOR
+                    : LOCAL_Y_AXIS_COLOR);
+            DrawTextEx(APP.ui_font, "Z", (Vector2){80, 20}, 50, 1.0f,
+                APP.view.rotation.xz.enabled || APP.view.rotation.yz.enabled || APP.view.rotation.zw.enabled
+                    ? WORLD_Z_AXIS_COLOR
+                    : LOCAL_Z_AXIS_COLOR);
+            DrawTextEx(APP.ui_font, "W", (Vector2){110, 20}, 50, 1.0f,
+                APP.view.rotation.xw.enabled || APP.view.rotation.yw.enabled || APP.view.rotation.zw.enabled
+                    ? WORLD_W_AXIS_COLOR
+                    : LOCAL_W_AXIS_COLOR);
+        }
 
         // draw the input window
-        {
+        if (APP.settings.hud_enabled || APP.console_gui_focused) {
             Vector2 pos = {0, GetScreenHeight() - 90};
             float font_size = 50.0f;
             float row_height = 60.0f;
@@ -1792,7 +1849,7 @@ void app_run()
         }
 
         // draw the w-fade display : ALPHA
-        {
+        if (APP.settings.hud_enabled) {
             Vector2 offset = {0, 10};
             int inner_width = 320;
             int inner_height = 90;
@@ -1876,7 +1933,7 @@ void app_run()
                         far_text_pos, font_size, 1.0f, (Color){30,30,30,255});
         }
         // draw the w-fade display : COLOR
-        {
+        if (APP.settings.hud_enabled) {
             Vector2 offset = {0, 120};
             int inner_width = 320;
             int inner_height = 90;
@@ -1968,7 +2025,7 @@ void app_run()
                         far_text_pos, font_size, 1.0f, (Color){30,30,30,255});
         }
         // draw the w-fade display : THICK
-        {
+        if (APP.settings.hud_enabled) {
             Vector2 offset = {0, 230};
             int inner_width = 320;
             int inner_height = 90;
@@ -1998,8 +2055,8 @@ void app_run()
 
             {
                 // draw the thick fade line with constant 6:1 thickness ratio
-                float r_start = 6.0f;
-                float r_end   = 1.0f;
+                float r_start = 18.0f;
+                float r_end   = 3.0f;
 
                 if (!APP.settings.w_thick_fade_enabled)
                 {
@@ -2161,7 +2218,7 @@ void draw_line4(Vector4 p0, Vector4 p1)
         n = APP.settings.w_thick_num_segments;
     }
 
-    // TODO make a setting for this, "wfade thick segments auto" +4color and alpha
+    // TODO make a setting for this, "fade thick segments auto" +4color and alpha
     // TODO turn this 0.05 into a number that tracks the # of edges to speed up rendering
     // this one doesn't have to be a setting, (makes edges less accurate on 600cells)
     // int n = (int) roundf(Vector4Distance(p0, p1) / 0.01f);
@@ -2489,23 +2546,23 @@ void console_gui_refresh_autofill()
         "quit",
         "reset",
 
-        "wfade thick far <t:float>",
-        "wfade thick near <t:float>",
-        "wfade thick segments <n:int>",
-        "wfade thick range <w-near:float> <w-far:float>",
-        "wfade thick <on|off>",
+        "fade thick far <t:float>",
+        "fade thick near <t:float>",
+        "fade thick segments <n:int>",
+        "fade thick range <w-near:float> <w-far:float>",
+        "fade thick <on|off>",
 
-        "wfade color far <r:float> <g:float> <b:float>",
-        "wfade color near <r:float> <g:float> <b:float>",
-        "wfade color segments <n:int>",
-        "wfade color range <w-near:float> <w-far:float>",
-        "wfade color <on|off>",
+        "fade color far <r:int> <g:int> <b:int>",
+        "fade color near <r:int> <g:int> <b:int>",
+        "fade color segments <n:int>",
+        "fade color range <w-near:float> <w-far:float>",
+        "fade color <on|off>",
 
-        "wfade alpha far <a:float>",
-        "wfade alpha near <a:float>",
-        "wfade alpha segments <n:int>",
-        "wfade alpha range <w-near:float> <w-far:float>",
-        "wfade alpha <on|off>",
+        "fade alpha far <a:float>",
+        "fade alpha near <a:float>",
+        "fade alpha segments <n:int>",
+        "fade alpha range <w-near:float> <w-far:float>",
+        "fade alpha <on|off>",
 
         "rotate zw",
         "rotate yw",
@@ -2513,15 +2570,6 @@ void console_gui_refresh_autofill()
         "rotate xw",
         "rotate xz",
         "rotate xy",
-
-        "view 3d",
-        "view 2d",
-
-        // "axes world",
-        // "axes model",
-        // "axes none",
-        // "axes all",
-        "axes",
 
         "model 24cell",
         "model 16cell",
@@ -2532,6 +2580,18 @@ void console_gui_refresh_autofill()
         "model oct",
         "model cube",
         "model tetra",
+
+        "view 3d",
+        "view 2d",
+
+        "bgcolor <r:int> <g:int> <b:int>",
+
+        // "axes world",
+        // "axes model",
+        // "axes none",
+        // "axes all",
+        "axes",
+        "hud",
 
         // generated commands
         NULL,
