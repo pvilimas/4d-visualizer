@@ -1,6 +1,7 @@
-#include "vis.h"
+#include "visualizer.h"
 
-AppContext APP;
+AppContext _APP;
+AppContext* APP = &_APP;
 
 int main() {
 
