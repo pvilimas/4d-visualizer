@@ -10,3 +10,4 @@
 - more polygons and polyhedra
 
 ## Commands
+- Hit enter to see all commands
