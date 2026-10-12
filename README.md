@@ -4,9 +4,9 @@
 - Main goal for this project - create a tool that allows you to visualize and manipulate geometry in 4 spatial dimensions
 
 ## Planned features
-- Full combinatorial structure
+- Full combinatorial structure/face lattice representation ✅
+- Pyramids, prisms, dual polytopes, and other operations
 - Slice mode
-- Duals and other operations
 - more polygons and polyhedra
 
 ## Commands
