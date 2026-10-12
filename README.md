@@ -11,3 +11,7 @@
 
 ## Commands
 - Hit enter to see all commands
+
+## How to build
+- Linux: should work natively, just do `make`
+- Windows: must have `x86_64-w64-mingw32-gcc` installed, then do `make PLATFORM=windows`
