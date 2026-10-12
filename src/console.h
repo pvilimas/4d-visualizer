@@ -20,6 +20,13 @@ typedef enum {
     // reset
     CMT_RESET,
 
+    // preset default
+    CMT_CHANGE_PRESET_DEFAULT,
+    // preset maxfade
+    CMT_CHANGE_PRESET_MAXFADE,
+    // preset nofade
+    CMT_CHANGE_PRESET_NOFADE,
+
     // simulation settings
 
     // bg <r:int> <g:int> <b:int>
@@ -42,16 +49,25 @@ typedef enum {
     CMT_TOGGLE_ROTATION_YW,
     CMT_TOGGLE_ROTATION_ZW,
 
-    // model <model:string>
-    CMT_SET_MODEL_TETRA,
-    CMT_SET_MODEL_CUBE,
-    CMT_SET_MODEL_OCT,
-    CMT_SET_MODEL_ICO,
+    // model polygon <#sides:int>
+    CMT_MAKE_MODEL_POLYGON,
+    // model prism
+    // CMT_MAKE_MODEL_PRISM,
+    // model pyramid
+    // CMT_MAKE_MODEL_PYRAMID,
+    // model dual
+    // CMT_MAKE_MODEL_DUAL,
 
-    CMT_SET_MODEL_5CELL,
-    CMT_SET_MODEL_8CELL,
-    CMT_SET_MODEL_16CELL,
-    CMT_SET_MODEL_24CELL,
+    // model <dim:int> <name:string>
+    CMT_SET_MODEL_3D_TETRA,
+    CMT_SET_MODEL_3D_CUBE,
+    CMT_SET_MODEL_3D_OCT,
+    CMT_SET_MODEL_3D_ICO,
+
+    CMT_SET_MODEL_4D_5CELL,
+    CMT_SET_MODEL_4D_8CELL,
+    CMT_SET_MODEL_4D_16CELL,
+    CMT_SET_MODEL_4D_24CELL,
 
     // rendering settings
 
@@ -201,6 +217,10 @@ ConsoleMsgResult cmh_pause(const ConsoleMsg* msg);                      // CMT_P
 
 ConsoleMsgResult cmh_reset(const ConsoleMsg* msg);                      // CMT_RESET
 
+ConsoleMsgResult cmh_change_preset_default(const ConsoleMsg* msg);      // CMT_CHANGE_PRESET_DEFAULT
+ConsoleMsgResult cmh_change_preset_maxfade(const ConsoleMsg* msg);      // CMT_CHANGE_PRESET_MAXFADE
+ConsoleMsgResult cmh_change_preset_nofade(const ConsoleMsg* msg);       // CMT_CHANGE_PRESET_NOFADE
+
 ConsoleMsgResult cmh_change_bgcolor(const ConsoleMsg* msg);             // CMT_CHANGE_BGCOLOR
 
 ConsoleMsgResult cmh_change_view_2d(const ConsoleMsg* msg);             // CMT_CHANGE_VIEW_2D
@@ -216,14 +236,18 @@ ConsoleMsgResult cmh_toggle_rotation_yz(const ConsoleMsg* msg);         // CMT_T
 ConsoleMsgResult cmh_toggle_rotation_yw(const ConsoleMsg* msg);         // CMT_TOGGLE_ROTATION_YW
 ConsoleMsgResult cmh_toggle_rotation_zw(const ConsoleMsg* msg);         // CMT_TOGGLE_ROTATION_ZW
 
-ConsoleMsgResult cmh_set_model_tetra(const ConsoleMsg* msg);            // CMT_SET_MODEL_TETRA
-ConsoleMsgResult cmh_set_model_cube(const ConsoleMsg* msg);             // CMT_SET_MODEL_CUBE
-ConsoleMsgResult cmh_set_model_oct(const ConsoleMsg* msg);              // CMT_SET_MODEL_OCT
-ConsoleMsgResult cmh_set_model_ico(const ConsoleMsg* msg);              // CMT_SET_MODEL_ICO
-ConsoleMsgResult cmh_set_model_5cell(const ConsoleMsg* msg);            // CMT_SET_MODEL_5CELL
-ConsoleMsgResult cmh_set_model_8cell(const ConsoleMsg* msg);            // CMT_SET_MODEL_8CELL
-ConsoleMsgResult cmh_set_model_16cell(const ConsoleMsg* msg);           // CMT_SET_MODEL_16CELL
-ConsoleMsgResult cmh_set_model_24cell(const ConsoleMsg* msg);           // CMT_SET_MODEL_24CELL
+ConsoleMsgResult cmh_make_model_polygon(const ConsoleMsg* msg);         // CMT_MAKE_MODEL_POLYGON
+// ConsoleMsgResult cmh_make_model_prism(const ConsoleMsg* msg);           // CMT_MAKE_MODEL_PRISM
+
+ConsoleMsgResult cmh_set_model_3d_tetra(const ConsoleMsg* msg);         // CMT_SET_MODEL_3D_TETRA
+ConsoleMsgResult cmh_set_model_3d_cube(const ConsoleMsg* msg);          // CMT_SET_MODEL_3D_CUBE
+ConsoleMsgResult cmh_set_model_3d_oct(const ConsoleMsg* msg);           // CMT_SET_MODEL_3D_OCT
+ConsoleMsgResult cmh_set_model_3d_ico(const ConsoleMsg* msg);           // CMT_SET_MODEL_3D_ICO
+
+ConsoleMsgResult cmh_set_model_4d_5cell(const ConsoleMsg* msg);         // CMT_SET_MODEL_4D_5CELL
+ConsoleMsgResult cmh_set_model_4d_8cell(const ConsoleMsg* msg);         // CMT_SET_MODEL_4D_8CELL
+ConsoleMsgResult cmh_set_model_4d_16cell(const ConsoleMsg* msg);        // CMT_SET_MODEL_4D_16CELL
+ConsoleMsgResult cmh_set_model_4d_24cell(const ConsoleMsg* msg);        // CMT_SET_MODEL_4D_24CELL
 
 ConsoleMsgResult cmh_set_wfade_alpha_enable(const ConsoleMsg* msg);     // CMT_SET_WFADE_ALPHA_ENABLE
 ConsoleMsgResult cmh_set_wfade_alpha_range(const ConsoleMsg* msg);      // CMT_SET_WFADE_ALPHA_RANGE

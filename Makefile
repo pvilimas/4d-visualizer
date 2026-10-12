@@ -8,6 +8,7 @@ IFLAGS = -I include
 SRC = \
 	src/camera.c \
 	src/console.c \
+	src/draw.c \
 	src/main.c \
 	src/mesh.c \
 	src/settings.c \
@@ -38,10 +39,10 @@ all: build run
 
 build:
 	@mkdir -p build
-	$(CC) $(CFLAGS) $(DFLAGS) $(SRC) $(IFLAGS) $(LFLAGS) -o $(OUT)
+	@$(CC) $(CFLAGS) $(DFLAGS) $(SRC) $(IFLAGS) $(LFLAGS) -o $(OUT)
 
 run:
 	@./$(OUT)
 
 clean:
-	rm -rf build/
+	@rm -rf build/

@@ -370,6 +370,10 @@ ConsoleMsgSchema get_console_msg_schema(ConsoleMsgType type)
         [CMT_PAUSE] = { CMT_PAUSE, { "pause" }, 1, { 0 }, 0 },
         [CMT_RESET] = { CMT_RESET, { "reset" }, 1, { 0 }, 0 },
 
+        [CMT_CHANGE_PRESET_DEFAULT] = { CMT_CHANGE_PRESET_DEFAULT, { "preset", "default" }, 2, { 0 }, 0 },
+        [CMT_CHANGE_PRESET_MAXFADE] = { CMT_CHANGE_PRESET_MAXFADE, { "preset", "maxfade" }, 2, { 0 }, 0 },
+        [CMT_CHANGE_PRESET_NOFADE] = { CMT_CHANGE_PRESET_NOFADE, { "preset", "nofade" }, 2, { 0 }, 0 },
+
         [CMT_CHANGE_VIEW_2D] = { CMT_CHANGE_VIEW_2D, { "view", "2d" }, 2, { 0 }, 0 },
         [CMT_CHANGE_VIEW_3D] = { CMT_CHANGE_VIEW_3D, { "view", "3d" }, 2, { 0 }, 0 },
 
@@ -385,15 +389,18 @@ ConsoleMsgSchema get_console_msg_schema(ConsoleMsgType type)
         [CMT_TOGGLE_ROTATION_YW] = { CMT_TOGGLE_ROTATION_YW, { "rotate", "yw" }, 2, { 0 }, 0 },
         [CMT_TOGGLE_ROTATION_ZW] = { CMT_TOGGLE_ROTATION_ZW, { "rotate", "zw" }, 2, { 0 }, 0 },
 
-        [CMT_SET_MODEL_TETRA] = { CMT_SET_MODEL_TETRA, { "model", "tetra" }, 2, { 0 }, 0 },
-        [CMT_SET_MODEL_CUBE]  = { CMT_SET_MODEL_CUBE, { "model", "cube" }, 2, { 0 }, 0 },
-        [CMT_SET_MODEL_OCT]   = { CMT_SET_MODEL_OCT, { "model", "oct" }, 2, { 0 }, 0 },
-        [CMT_SET_MODEL_ICO]   = { CMT_SET_MODEL_ICO, { "model", "ico" }, 2, { 0 }, 0 },
+        [CMT_MAKE_MODEL_POLYGON] = { CMT_MAKE_MODEL_POLYGON, { "model", "polygon" }, 2, { CMAT_INT }, 1 },
+        // [CMT_MAKE_MODEL_PRISM] = { CMT_MAKE_MODEL_PRISM, { "model", "prism" }, 2, { 0 }, 0 },
 
-        [CMT_SET_MODEL_5CELL] = { CMT_SET_MODEL_5CELL, { "model", "5cell" }, 2, { 0 }, 0 },
-        [CMT_SET_MODEL_8CELL] = { CMT_SET_MODEL_8CELL, { "model", "8cell" }, 2, { 0 }, 0 },
-        [CMT_SET_MODEL_16CELL] = { CMT_SET_MODEL_16CELL, { "model", "16cell" }, 2, { 0 }, 0 },
-        [CMT_SET_MODEL_24CELL] = { CMT_SET_MODEL_24CELL, { "model", "24cell" }, 2, { 0 }, 0 },
+        [CMT_SET_MODEL_3D_TETRA] = { CMT_SET_MODEL_3D_TETRA, { "model", "3d", "tetra" }, 3, { 0 }, 0 },
+        [CMT_SET_MODEL_3D_CUBE]  = { CMT_SET_MODEL_3D_CUBE, { "model", "3d", "cube" }, 3, { 0 }, 0 },
+        [CMT_SET_MODEL_3D_OCT]   = { CMT_SET_MODEL_3D_OCT, { "model", "3d", "oct" }, 3, { 0 }, 0 },
+        [CMT_SET_MODEL_3D_ICO]   = { CMT_SET_MODEL_3D_ICO, { "model", "3d", "ico" }, 3, { 0 }, 0 },
+
+        [CMT_SET_MODEL_4D_5CELL] = { CMT_SET_MODEL_4D_5CELL, { "model", "4d", "5cell" }, 3, { 0 }, 0 },
+        [CMT_SET_MODEL_4D_8CELL] = { CMT_SET_MODEL_4D_8CELL, { "model", "4d", "8cell" }, 3, { 0 }, 0 },
+        [CMT_SET_MODEL_4D_16CELL] = { CMT_SET_MODEL_4D_16CELL, { "model", "4d", "16cell" }, 3, { 0 }, 0 },
+        [CMT_SET_MODEL_4D_24CELL] = { CMT_SET_MODEL_4D_24CELL, { "model", "4d", "24cell" }, 3, { 0 }, 0 },
 
         [CMT_SET_WFADE_ALPHA_ENABLE]   = { CMT_SET_WFADE_ALPHA_ENABLE,   { "fade", "alpha" },             2, { CMAT_BOOL },                          1 },
         [CMT_SET_WFADE_ALPHA_RANGE]    = { CMT_SET_WFADE_ALPHA_RANGE,    { "fade", "alpha", "range" },    3, { CMAT_FLOAT, CMAT_FLOAT },             2 },
@@ -421,29 +428,43 @@ ConsoleMsgSchema get_console_msg_schema(ConsoleMsgType type)
 
 ConsoleMsgResult cmh_quit(const ConsoleMsg* msg)
 {
-    // takes 0 arguments, ignores all that are given
     APP->is_exiting = true;
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
 ConsoleMsgResult cmh_play(const ConsoleMsg* msg)
 {
-    // takes 0 arguments, ignores all that are given
     APP->is_paused = false;
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
 ConsoleMsgResult cmh_pause(const ConsoleMsg* msg)
 {
-    // takes 0 arguments, ignores all that are given
     APP->is_paused = true;
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
 ConsoleMsgResult cmh_reset(const ConsoleMsg* msg)
 {
-    // takes 0 arguments, ignores all that are given
     app_reset();
+    return (ConsoleMsgResult){ CMRT_OK, "" };
+}
+
+ConsoleMsgResult cmh_change_preset_default(const ConsoleMsg* msg)
+{
+    APP->settings = get_settings_default();
+    return (ConsoleMsgResult){ CMRT_OK, "" };
+}
+
+ConsoleMsgResult cmh_change_preset_maxfade(const ConsoleMsg* msg)
+{
+    APP->settings = get_settings_max_fade();
+    return (ConsoleMsgResult){ CMRT_OK, "" };
+}
+
+ConsoleMsgResult cmh_change_preset_nofade(const ConsoleMsg* msg)
+{
+    APP->settings = get_settings_no_fade();
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
@@ -548,7 +569,11 @@ ConsoleMsgResult cmh_toggle_hud(const ConsoleMsg* msg)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#950" };
     }
-    APP->settings.hud_enabled = !APP->settings.hud_enabled;
+
+    if (APP->settings.hud_mode == HM_NONE)          { APP->settings.hud_mode = HM_SIMPLE; }
+    else if (APP->settings.hud_mode == HM_SIMPLE)   { APP->settings.hud_mode = HM_ALL; }
+    else if (APP->settings.hud_mode == HM_ALL)      { APP->settings.hud_mode = HM_NONE; }
+
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
@@ -612,83 +637,123 @@ ConsoleMsgResult cmh_toggle_rotation_zw(const ConsoleMsg* msg)
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
-ConsoleMsgResult cmh_set_model_tetra(const ConsoleMsg* msg)
+ConsoleMsgResult cmh_make_model_polygon(const ConsoleMsg* msg)
 {
-    if (msg->type != CMT_SET_MODEL_TETRA)
+    if (msg->type != CMT_MAKE_MODEL_POLYGON)
+    {
+        return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#641" };
+    }
+    if (msg->num_args_received < 1)
+    {
+        return (ConsoleMsgResult){ CMRT_PARSE_ERROR, "model polygon <#sides:int>" };
+    }
+    int64_t arg0;
+    cma_convert_to_int(&msg->args[0], &arg0);
+
+    PolytopeMesh pm = pm_new_2d_regular_polygon((uint8_t)arg0);
+    app_set_model(MT_CUSTOM, &pm);
+
+    return (ConsoleMsgResult){ CMRT_OK, "" };
+}
+
+// ConsoleMsgResult cmh_make_model_prism(const ConsoleMsg* msg)
+// {
+//     if (msg->type != CMT_MAKE_MODEL_PRISM)
+//     {
+//         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#641" };
+//     }
+//
+//     if (APP->model.mesh.dimension == 2)
+//     {
+//         PolytopeMesh pm = pm_new_prism_from_2d(&APP->model.mesh);
+//         app_set_model(MT_CUSTOM, &pm);
+//     }
+//     else if (APP->model.mesh.dimension == 3)
+//     {
+//         PolytopeMesh pm = pm_new_prism_from_3d(&APP->model.mesh);
+//         app_set_model(MT_CUSTOM, &pm);
+//     }
+//
+//     return (ConsoleMsgResult){ CMRT_OK, "" };
+// }
+
+ConsoleMsgResult cmh_set_model_3d_tetra(const ConsoleMsg* msg)
+{
+    if (msg->type != CMT_SET_MODEL_3D_TETRA)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#699" };
     }
-    app_set_model(MT_TETRA);
+    app_set_model(MT_3D_TETRA, NULL);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
-ConsoleMsgResult cmh_set_model_cube(const ConsoleMsg* msg)
+ConsoleMsgResult cmh_set_model_3d_cube(const ConsoleMsg* msg)
 {
-    if (msg->type != CMT_SET_MODEL_CUBE)
+    if (msg->type != CMT_SET_MODEL_3D_CUBE)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#709" };
     }
-    app_set_model(MT_CUBE);
+    app_set_model(MT_3D_CUBE, NULL);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
-ConsoleMsgResult cmh_set_model_oct(const ConsoleMsg* msg)
+ConsoleMsgResult cmh_set_model_3d_oct(const ConsoleMsg* msg)
 {
-    if (msg->type != CMT_SET_MODEL_OCT)
+    if (msg->type != CMT_SET_MODEL_3D_OCT)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#846" };
     }
-    app_set_model(MT_OCT);
+    app_set_model(MT_3D_OCT, NULL);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
-ConsoleMsgResult cmh_set_model_ico(const ConsoleMsg* msg)
+ConsoleMsgResult cmh_set_model_3d_ico(const ConsoleMsg* msg)
 {
-    if (msg->type != CMT_SET_MODEL_ICO)
+    if (msg->type != CMT_SET_MODEL_3D_ICO)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#876" };
     }
-    app_set_model(MT_ICO);
+    app_set_model(MT_3D_ICO, NULL);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
-ConsoleMsgResult cmh_set_model_5cell(const ConsoleMsg* msg)
+ConsoleMsgResult cmh_set_model_4d_5cell(const ConsoleMsg* msg)
 {
-    if (msg->type != CMT_SET_MODEL_5CELL)
+    if (msg->type != CMT_SET_MODEL_4D_5CELL)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#623" };
     }
-    app_set_model(MT_5CELL);
+    app_set_model(MT_4D_5CELL, NULL);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
-ConsoleMsgResult cmh_set_model_8cell(const ConsoleMsg* msg)
+ConsoleMsgResult cmh_set_model_4d_8cell(const ConsoleMsg* msg)
 {
-    if (msg->type != CMT_SET_MODEL_8CELL)
+    if (msg->type != CMT_SET_MODEL_4D_8CELL)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#633" };
     }
-    app_set_model(MT_8CELL);
+    app_set_model(MT_4D_8CELL, NULL);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
-ConsoleMsgResult cmh_set_model_16cell(const ConsoleMsg* msg)
+ConsoleMsgResult cmh_set_model_4d_16cell(const ConsoleMsg* msg)
 {
-    if (msg->type != CMT_SET_MODEL_16CELL)
+    if (msg->type != CMT_SET_MODEL_4D_16CELL)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#1044" };
     }
-    app_set_model(MT_16CELL);
+    app_set_model(MT_4D_16CELL, NULL);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
-ConsoleMsgResult cmh_set_model_24cell(const ConsoleMsg* msg)
+ConsoleMsgResult cmh_set_model_4d_24cell(const ConsoleMsg* msg)
 {
-    if (msg->type != CMT_SET_MODEL_24CELL)
+    if (msg->type != CMT_SET_MODEL_4D_24CELL)
     {
         return (ConsoleMsgResult){ CMRT_INTERNAL_ERROR, "L#941" };
     }
-    app_set_model(MT_24CELL);
+    app_set_model(MT_4D_24CELL, NULL);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
@@ -979,6 +1044,7 @@ ConsoleMsgResult cmh_set_wfade_thick_far(const ConsoleMsg* msg)
     float arg0;
     cma_convert_to_float(&msg->args[0], &arg0);
     APP->settings.w_thick_far = arg0;
+    printf("<<%f>>\n", arg0);
     return (ConsoleMsgResult){ CMRT_OK, "" };
 }
 
@@ -986,6 +1052,11 @@ ConsoleMsgResult cmh_set_wfade_thick_far(const ConsoleMsg* msg)
 
 bool console_parse_line(const char* line, ConsoleMsg* msg_out)
 {
+    if (!line || !strlen(line))
+    {
+        return false;
+    }
+
     char working[CONSOLE_MSG_LEN];
     strncpy(working, line, CONSOLE_MSG_LEN - 1);
     working[CONSOLE_MSG_LEN - 1] = '\0';
@@ -1146,6 +1217,10 @@ void console_gui_refresh_autofill()
         "quit",
         "reset",
 
+        "preset nofade",
+        "preset maxfade",
+        "preset default",
+
         "fade thick far <t:float>",
         "fade thick near <t:float>",
         "fade thick segments <n:int>",
@@ -1171,15 +1246,20 @@ void console_gui_refresh_autofill()
         "rotate xz",
         "rotate xy",
 
-        "model 24cell",
-        "model 16cell",
-        "model 8cell",
-        "model 5cell",
+        "model 4d 24cell",
+        "model 4d 16cell",
+        "model 4d 8cell",
+        "model 4d 5cell",
 
-        "model ico",
-        "model oct",
-        "model cube",
-        "model tetra",
+        "model 3d ico",
+        "model 3d oct",
+        "model 3d cube",
+        "model 3d tetra",
+
+        // "model dual",
+        // "model pyramid",
+        // "model prism",
+        "model polygon <#sides:int>",
 
         "view 3d",
         "view 2d",
@@ -1190,8 +1270,8 @@ void console_gui_refresh_autofill()
         // "axes model",
         // "axes none",
         // "axes all",
-        "axes",
         "hud",
+        "axes",
 
         // generated commands
         NULL,
@@ -1203,8 +1283,8 @@ void console_gui_refresh_autofill()
 
     if (view4d_is_any_axis_rotating(&APP->view))
     {
+        COMMANDS[COMMAND_COUNT] = APP->is_paused ? "play" : "pause";
         COMMAND_COUNT += 1;
-        COMMANDS[COMMAND_COUNT - 1] = APP->is_paused ? "play" : "pause";
     }
 
     static char suggestion_buf[CONSOLE_GUI_AUTOFILL_ENTRY_COUNT][CONSOLE_MSG_LEN];
@@ -1217,6 +1297,11 @@ void console_gui_refresh_autofill()
 
         for (int i = 0; i < COMMAND_COUNT; i += 1)
         {
+            if (!COMMANDS[i])
+            {
+                continue;
+            }
+
             size_t first_word_len = 0;
             while (COMMANDS[i][first_word_len] != ' ' && COMMANDS[i][first_word_len] != '\0')
             {

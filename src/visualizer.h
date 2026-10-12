@@ -4,23 +4,16 @@
 #include "common.h"
 
 #include "camera.h"
+#include "draw.h"
 #include "mesh.h"
 #include "axes.h"
 #include "view.h"
 #include "console.h"
 #include "settings.h"
 
-// -------------------------------- MODELS --------------------------------- //
-
-typedef struct {
-    ModelType type;
-    Axes4D axes;
-    Mesh4D mesh;
-} Model4D;
-
 // ------------------------------ APPLICATION ------------------------------ //
 
-struct AppContext{
+struct AppContext {
 
     // current render
     Model4D model;
@@ -29,13 +22,17 @@ struct AppContext{
 
     // raylib stuff
     Font ui_font;
+    // textures to draw +/- signs, order = xyzw
+    Texture axis_billboard_tex[4];
+    Image axis_billboard_img[4];
 
-    // internals
+    // internal flags
     bool is_paused;
     bool is_exiting;
+
+    // console
     ConsoleMsgQueue cmq;
     ConsoleMsgHandler cmh[CMT_COUNT];
-
     char console_gui_input[CONSOLE_MSG_LEN];
     size_t console_gui_input_len;
     bool console_gui_focused;
@@ -50,12 +47,7 @@ void app_reset();   // just inits the data back to defaults
 void app_run();
 void app_exit();
 
-// set which model to display
-void app_set_model(ModelType type);
-
-// ------------------------------ DEBUG FLAGS ------------------------------ //
-
-// display camera coordinates on the screen
-#define DEBUG_CAMERA_COORDS 0
+// set which model to display, or optionally pass in an existing custom model
+void app_set_model(ModelType type, PolytopeMesh* opt_custom);
 
 #endif // VISUALIZER_H

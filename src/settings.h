@@ -6,6 +6,12 @@
 
 // ------------------------------- SETTINGS -------------------------------- //
 
+typedef enum {
+    HM_NONE,    // show nothing except the console window (when its active)
+    HM_SIMPLE,  // show the XYZW and the console window (when its active)
+    HM_ALL      // show everything at all times
+} HudMode;
+
 typedef struct {
 
     // console settings
@@ -20,7 +26,7 @@ typedef struct {
     bool world_axes_enabled;    // enable/disable world axes
     bool local_axes_enabled;    // enable/disable local axes for the model
 
-    bool hud_enabled;           // enable/disable the hud
+    HudMode hud_mode;           // enable/disable hud elements
 
     // fade alpha linearly along the w-axis (further = more transparent)
     bool w_alpha_fade_enabled;  // enable/disable alpha fade
@@ -49,8 +55,8 @@ typedef struct {
 } Settings;
 
 // get different presets of the settings
-Settings get_settings_default();    // experimental defaults
+Settings get_settings_default();    // strong w-depth cues
+Settings get_settings_max_fade();   // stronger w-depth cues
 Settings get_settings_no_fade();    // no color or alpha fading, no w-depth cues
-Settings get_settings_max_fade();   // strong w-depth cues
 
 #endif // SETTINGS_H

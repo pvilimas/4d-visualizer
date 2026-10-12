@@ -20,6 +20,12 @@
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #define MAX(x,y) ((x)>(y)?(x):(y))
 
+#define CONSTANT_SQRT2 1.41421356237309504880f
+#define CONSTANT_SQRT3 1.73205080756887729353f
+#define CONSTANT_SQRT5 2.23606797749978969641f
+#define CONSTANT_PI    3.14159265358979323846f
+#define CONSTANT_PHI   1.61803398874989484820f
+
 // ------------------------ COMPILE-TIME PARAMETERS ------------------------ //
 
 // prefix to use for console commands
@@ -35,7 +41,7 @@
 #define CONSOLE_MSG_MAX_QUEUE_SIZE 10
 
 // how many lines there can be in the console + 1 basically
-#define CONSOLE_GUI_AUTOFILL_ENTRY_COUNT 10
+#define CONSOLE_GUI_AUTOFILL_ENTRY_COUNT 20
 
 // how long the x,y,z,w axes extend out from the origin
 #define AXIS_MAGNITUDE 1000
@@ -64,7 +70,8 @@
 #define ORIGIN_SIZE 0.15f
 
 // the color of the origin sphere
-#define ORIGIN_COLOR RAYWHITE
+// #define ORIGIN_COLOR RAYWHITE
+#define ORIGIN_COLOR GUI_COLOR_BORDER_LIGHT
 
 // orthographic 2d mode zoom (z-coordinates)
 #define ORTHO_ZOOM_MIN 0.0001f
@@ -77,22 +84,34 @@
 #define GUI_COLOR_FILL_LIGHT ((Color){120,120,120,255})
 #define GUI_COLOR_FILL_DARK ((Color){60,60,60,255})
 
+// ------------------------------ DEBUG FLAGS ------------------------------ //
+
+// display camera coordinates on the screen
+#define DEBUG_CAMERA_COORDS 0
+
+// draw a sphere of radius 0.5 around the origin
+#define DEBUG_CIRCUMSPHERE 0
+
 // ------------------------------ MODEL TYPES ------------------------------ //
 
 typedef enum {
     MT_NONE,
 
-    MT_TETRA,
-    MT_CUBE,
-    MT_OCT,
-    MT_ICO,
+    MT_CUSTOM, // a model with special operations done to it
 
-    MT_5CELL,
-    MT_8CELL,
-    MT_16CELL,
-    MT_24CELL,
-    // MT_120CELL,
-    // MT_600CELL,
+    // presets
+
+    MT_3D_TETRA,
+    MT_3D_CUBE,
+    MT_3D_OCT,
+    MT_3D_ICO,
+
+    MT_4D_5CELL,
+    MT_4D_8CELL,
+    MT_4D_16CELL,
+    MT_4D_24CELL,
+    // MT_4D_120CELL,
+    // MT_4D_600CELL,
     // ...
 
     MT_COUNT

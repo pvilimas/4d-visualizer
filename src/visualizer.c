@@ -1,7 +1,5 @@
 #include "visualizer.h"
 
-// -------------------------------- MODELS --------------------------------- //
-
 // ------------------------------ APPLICATION ------------------------------ //
 
 void app_init()
@@ -15,47 +13,64 @@ void app_init()
     SetExitKey(0);
     SetTargetFPS(60);
     MaximizeWindow();
+    ToggleFullscreen();
 
     // initialize app data
+    APP->is_exiting = false;
 
+    // init raylib data
     APP->ui_font = LoadFontEx("/home/paul/.local/share/fonts/Iosevka-Bold.ttf", 32, NULL, 0);
+    APP->axis_billboard_img[0] = GenImageColor(100, 20, LOCAL_X_AXIS_COLOR);
+    APP->axis_billboard_img[1] = GenImageColor(100, 20, LOCAL_Y_AXIS_COLOR);
+    APP->axis_billboard_img[2] = GenImageColor(100, 20, LOCAL_Z_AXIS_COLOR);
+    APP->axis_billboard_img[3] = GenImageColor(100, 20, LOCAL_W_AXIS_COLOR);
+    APP->axis_billboard_tex[0] = LoadTextureFromImage(APP->axis_billboard_img[0]);
+    APP->axis_billboard_tex[1] = LoadTextureFromImage(APP->axis_billboard_img[1]);
+    APP->axis_billboard_tex[2] = LoadTextureFromImage(APP->axis_billboard_img[2]);
+    APP->axis_billboard_tex[3] = LoadTextureFromImage(APP->axis_billboard_img[3]);
+
+    // init the console
     console_gui_clear();
     console_gui_clear_autofill_entries();
     APP->console_gui_focused = false;
 
-    APP->is_exiting = false;
-
     // init the console message handlers
+    APP->cmh[CMT_QUIT]                      = cmh_quit;
+    APP->cmh[CMT_PLAY]                      = cmh_play;
+    APP->cmh[CMT_PAUSE]                     = cmh_pause;
+    APP->cmh[CMT_RESET]                     = cmh_reset;
 
-    APP->cmh[CMT_QUIT]                       = cmh_quit;
-    APP->cmh[CMT_PLAY]                       = cmh_play;
-    APP->cmh[CMT_PAUSE]                      = cmh_pause;
-    APP->cmh[CMT_RESET]                      = cmh_reset;
+    APP->cmh[CMT_CHANGE_PRESET_DEFAULT]     = cmh_change_preset_default;
+    APP->cmh[CMT_CHANGE_PRESET_MAXFADE]     = cmh_change_preset_maxfade;
+    APP->cmh[CMT_CHANGE_PRESET_NOFADE]      = cmh_change_preset_nofade;
 
-    APP->cmh[CMT_CHANGE_VIEW_2D]             = cmh_change_view_2d;
-    APP->cmh[CMT_CHANGE_VIEW_3D]             = cmh_change_view_3d;
+    APP->cmh[CMT_CHANGE_VIEW_2D]            = cmh_change_view_2d;
+    APP->cmh[CMT_CHANGE_VIEW_3D]            = cmh_change_view_3d;
 
-    APP->cmh[CMT_CHANGE_BGCOLOR]             = cmh_change_bgcolor;
+    APP->cmh[CMT_CHANGE_BGCOLOR]            = cmh_change_bgcolor;
 
-    APP->cmh[CMT_TOGGLE_AXES]                = cmh_toggle_axes;
-    APP->cmh[CMT_TOGGLE_HUD]                 = cmh_toggle_hud;
+    APP->cmh[CMT_TOGGLE_AXES]               = cmh_toggle_axes;
+    APP->cmh[CMT_TOGGLE_HUD]                = cmh_toggle_hud;
 
-    APP->cmh[CMT_TOGGLE_ROTATION_XY]         = cmh_toggle_rotation_xy;
-    APP->cmh[CMT_TOGGLE_ROTATION_XZ]         = cmh_toggle_rotation_xz;
-    APP->cmh[CMT_TOGGLE_ROTATION_XW]         = cmh_toggle_rotation_xw;
-    APP->cmh[CMT_TOGGLE_ROTATION_YZ]         = cmh_toggle_rotation_yz;
-    APP->cmh[CMT_TOGGLE_ROTATION_YW]         = cmh_toggle_rotation_yw;
-    APP->cmh[CMT_TOGGLE_ROTATION_ZW]         = cmh_toggle_rotation_zw;
+    APP->cmh[CMT_TOGGLE_ROTATION_XY]        = cmh_toggle_rotation_xy;
+    APP->cmh[CMT_TOGGLE_ROTATION_XZ]        = cmh_toggle_rotation_xz;
+    APP->cmh[CMT_TOGGLE_ROTATION_XW]        = cmh_toggle_rotation_xw;
+    APP->cmh[CMT_TOGGLE_ROTATION_YZ]        = cmh_toggle_rotation_yz;
+    APP->cmh[CMT_TOGGLE_ROTATION_YW]        = cmh_toggle_rotation_yw;
+    APP->cmh[CMT_TOGGLE_ROTATION_ZW]        = cmh_toggle_rotation_zw;
 
-    APP->cmh[CMT_SET_MODEL_TETRA]            = cmh_set_model_tetra;
-    APP->cmh[CMT_SET_MODEL_CUBE]             = cmh_set_model_cube;
-    APP->cmh[CMT_SET_MODEL_OCT]              = cmh_set_model_oct;
-    APP->cmh[CMT_SET_MODEL_ICO]              = cmh_set_model_ico;
+    APP->cmh[CMT_MAKE_MODEL_POLYGON]        = cmh_make_model_polygon;
+    // APP->cmh[CMT_MAKE_MODEL_PRISM]          = cmh_make_model_prism;
 
-    APP->cmh[CMT_SET_MODEL_5CELL]            = cmh_set_model_5cell;
-    APP->cmh[CMT_SET_MODEL_8CELL]            = cmh_set_model_8cell;
-    APP->cmh[CMT_SET_MODEL_16CELL]           = cmh_set_model_16cell;
-    APP->cmh[CMT_SET_MODEL_24CELL]           = cmh_set_model_24cell;
+    APP->cmh[CMT_SET_MODEL_3D_TETRA]         = cmh_set_model_3d_tetra;
+    APP->cmh[CMT_SET_MODEL_3D_CUBE]          = cmh_set_model_3d_cube;
+    APP->cmh[CMT_SET_MODEL_3D_OCT]           = cmh_set_model_3d_oct;
+    APP->cmh[CMT_SET_MODEL_3D_ICO]           = cmh_set_model_3d_ico;
+
+    APP->cmh[CMT_SET_MODEL_4D_5CELL]         = cmh_set_model_4d_5cell;
+    APP->cmh[CMT_SET_MODEL_4D_8CELL]         = cmh_set_model_4d_8cell;
+    APP->cmh[CMT_SET_MODEL_4D_16CELL]        = cmh_set_model_4d_16cell;
+    APP->cmh[CMT_SET_MODEL_4D_24CELL]        = cmh_set_model_4d_24cell;
 
     APP->cmh[CMT_SET_WFADE_ALPHA_ENABLE]     = cmh_set_wfade_alpha_enable;
     APP->cmh[CMT_SET_WFADE_ALPHA_RANGE]      = cmh_set_wfade_alpha_range;
@@ -112,16 +127,21 @@ void app_reset()
     APP->view.camera_control.mode = CM_3D_ORBITAL;
     APP->view.camera_control.orbital_yaw = -0.55f;
     APP->view.camera_control.orbital_pitch = 0.37f;
+    APP->view.camera_control.orbital_roll = 0.0f;
     APP->view.camera_control.orbital_radius = 9.0f;
+    // APP->view.camera_control.orbital_up = (Vector3){ 0, 1, 0 };
     APP->view.camera_control.ortho_zoom = 4.0f;
-    APP->view.camera_control.ortho_view_dir = (Vector3){0, 0, -1};
+    APP->view.camera_control.ortho_view_dir = (Vector3){ 0, 0, -1 };
+
+    APP->view.camera_control.orbital_position = (Vector3){ 0.0f, 0.0f, -9.0f };
+    APP->view.camera_control.orbital_up = (Vector3){ 0.0f, 1.0f, 0.0f };
 
     APP->view.camera.fovy = 45.0f;
     APP->view.camera.projection = CAMERA_PERSPECTIVE;
 
-    app_set_model(MT_CUBE);
+    app_set_model(MT_3D_CUBE, NULL);
 
-    APP->settings = get_settings_max_fade();
+    APP->settings = get_settings_default();
 }
 
 void app_run()
@@ -139,6 +159,15 @@ void app_run()
         }
 
         // poll for keyinput
+        if (IsKeyPressed(KEY_F))
+        {
+            if (!APP->console_gui_focused)
+            {
+                ToggleFullscreen();
+            }
+        }
+
+        // console keyinput
         if (IsKeyPressed(KEY_BACKSPACE))
         {
             if (APP->console_gui_focused)
@@ -180,7 +209,7 @@ void app_run()
             }
         }
 
-        // poll for console messages
+        // poll for console messages - TODO remove?
         ConsoleMsg msg;
         while(cmq_pop(&msg))
         {
@@ -204,9 +233,9 @@ void app_run()
         }
 
         Vector4 rotated[1024];
-        for (int i = 0; i < APP->model.mesh.vertex_count; i += 1)
+        for (uint32_t i = 0; i < APP->model.mesh.layers[0].sub.verts.size; i += 1)
         {
-            Vector4 v = APP->model.mesh.vertices[i];
+            Vector4 v = APP->model.mesh.layers[0].sub.verts.data[i];
             v = rotate_vector_in_plane(v, APP->view.rotation.xy.angle, 0, 1);
             v = rotate_vector_in_plane(v, APP->view.rotation.xz.angle, 0, 2);
             v = rotate_vector_in_plane(v, APP->view.rotation.xw.angle, 0, 3);
@@ -259,11 +288,8 @@ void app_run()
         // draw the model
         // rlDisableDepthMask();
         BeginBlendMode(BLEND_ALPHA);
-        for (int e = 0; e < APP->model.mesh.edge_count; e += 1) {
-            int i0 = APP->model.mesh.edges[e][0];
-            int i1 = APP->model.mesh.edges[e][1];
-            draw_line4(rotated[i0], rotated[i1]);
-        }
+        draw_mesh(&APP->model.mesh, rotated);
+        // draw_mesh_w_depth_cues(&APP->model.mesh, rotated);
         EndBlendMode();
         // rlEnableDepthMask();
 
@@ -285,6 +311,106 @@ void app_run()
 
             // draw the origin
             DrawSphere((Vector3){0, 0, 0}, ORIGIN_SIZE, ORIGIN_COLOR);
+
+            // draw the axis billboards (+/- signs really far out)
+            /*
+            rlDisableBackfaceCulling();
+            Vector2 billboard_size = { 15.f, 3.f };
+            Vector2 billboard_origin = { billboard_size.x * 0.5f, billboard_size.y * 0.5f };
+            // +x
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[0],
+                (Rectangle){ 0, 0, 100, 20 }, x_start,
+                axis_billboard_up(x_start, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                0.0f, WHITE);
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[0],
+                (Rectangle){ 0, 0, 100, 20 }, x_start,
+                axis_billboard_up(x_start, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                90.f, WHITE);
+            // -x
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[0],
+                (Rectangle){ 0, 0, 100, 20 }, x_end,
+                axis_billboard_up(x_end, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                0.0f, WHITE);
+            // +y
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[1],
+                (Rectangle){ 0, 0, 100, 20 }, y_start,
+                axis_billboard_up(y_start, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                0.0f, WHITE);
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[1],
+                (Rectangle){ 0, 0, 100, 20 }, y_start,
+                axis_billboard_up(y_start, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                90.f, WHITE);
+            // -y
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[1],
+                (Rectangle){ 0, 0, 100, 20 }, y_end,
+                axis_billboard_up(y_end, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                0.0f, WHITE);
+            // +z
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[2],
+                (Rectangle){ 0, 0, 100, 20 }, z_start,
+                axis_billboard_up(z_start, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                0.0f, WHITE);
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[2],
+                (Rectangle){ 0, 0, 100, 20 }, z_start,
+                axis_billboard_up(z_start, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                90.f, WHITE);
+            // -z
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[2],
+                (Rectangle){ 0, 0, 100, 20 }, z_end,
+                axis_billboard_up(z_end, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                0.0f, WHITE);
+            // +w
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[3],
+                (Rectangle){ 0, 0, 100, 20 }, w_start,
+                axis_billboard_up(w_start, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                0.0f, WHITE);
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[3],
+                (Rectangle){ 0, 0, 100, 20 }, w_start,
+                axis_billboard_up(w_start, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                90.f, WHITE);
+            // -w
+            DrawBillboardPro(APP->view.camera,
+                APP->axis_billboard_tex[3],
+                (Rectangle){ 0, 0, 100, 20 }, w_end,
+                axis_billboard_up(w_end, APP->view.camera),
+                billboard_size,
+                billboard_origin,
+                0.0f, WHITE);
+            rlEnableBackfaceCulling();
+            */
         }
 
         // draw the model axes
@@ -339,12 +465,23 @@ void app_run()
             DrawSphere((Vector3){0, 0, 0}, ORIGIN_SIZE/2, ORIGIN_COLOR);
         }
 
+        // draw 3d debug information
+#if DEBUG_CIRCUMSPHERE
+        const int num_slices = 20;
+        for (int i = 0; i < num_slices; i += 1)
+        {
+            float angle = 180.0f * (float)i / num_slices;
+            DrawCircle3D((Vector3){0,0,0}, 1, (Vector3){ 0, 1, 0 }, angle, GRAY);
+            DrawCircle3D((Vector3){0,0,0}, 1, (Vector3){ 1, 0, 0 }, angle, GRAY);
+        }
+#endif
+
         EndMode3D();
 
         // draw 2d overlays
 
         // draw XYZW axis highlights for rotation
-        if (APP->settings.hud_enabled)
+        if (APP->settings.hud_mode != HM_NONE)
         {
             DrawTextEx(APP->ui_font, "X", (Vector2){20, 20}, 50, 1.0f,
                 APP->view.rotation.xy.enabled || APP->view.rotation.xz.enabled || APP->view.rotation.xw.enabled
@@ -365,7 +502,7 @@ void app_run()
         }
 
         // draw the input window
-        if (APP->settings.hud_enabled || APP->console_gui_focused) {
+        if (APP->settings.hud_mode == HM_ALL || APP->console_gui_focused) {
             Vector2 pos = {0, GetScreenHeight() - 90};
             float font_size = 50.0f;
             float row_height = 60.0f;
@@ -432,7 +569,7 @@ void app_run()
         }
 
         // draw the w-fade display : ALPHA
-        if (APP->settings.hud_enabled) {
+        if (APP->settings.hud_mode == HM_ALL) {
             Vector2 offset = {0, 10};
             int inner_width = 320;
             int inner_height = 90;
@@ -516,7 +653,7 @@ void app_run()
                         far_text_pos, font_size, 1.0f, (Color){30,30,30,255});
         }
         // draw the w-fade display : COLOR
-        if (APP->settings.hud_enabled) {
+        if (APP->settings.hud_mode == HM_ALL) {
             Vector2 offset = {0, 120};
             int inner_width = 320;
             int inner_height = 90;
@@ -608,7 +745,7 @@ void app_run()
                         far_text_pos, font_size, 1.0f, (Color){30,30,30,255});
         }
         // draw the w-fade display : THICK
-        if (APP->settings.hud_enabled) {
+        if (APP->settings.hud_mode == HM_ALL) {
             Vector2 offset = {0, 230};
             int inner_width = 320;
             int inner_height = 90;
@@ -676,7 +813,7 @@ void app_run()
 
             near_text_pos.y = bottom_text_y;
 
-            DrawTextEx(APP->ui_font, TextFormat("%g", APP->settings.w_alpha_dist_near),
+            DrawTextEx(APP->ui_font, TextFormat("%g", APP->settings.w_thick_dist_near),
                         near_text_pos, font_size, 1.0f, (Color){30,30,30,255});
 
             Vector2 far_text_pos = {
@@ -715,6 +852,47 @@ void app_run()
         }
 
 #endif
+
+        {
+            PolytopeMesh* pm = &APP->model.mesh;
+
+            if (pm->layers && pm->layers[0].sub.verts.data)
+            {
+                // Vector2 mouse_pos = GetMousePosition();
+                // int debug_x = (int)mouse_pos.x + 16;
+                // int debug_y = (int)mouse_pos.y + 16;
+                // DrawText(TextFormat("verts: %u", pm->layers[0].sub.verts.size), debug_x, debug_y, 14, WHITE);
+
+                for (uint8_t d = 1; d <= pm->dimension; d += 1)
+                {
+                    RefList* refs = &pm->layers[d].sub.refs;
+
+                    if (refs->data == NULL)
+                    {
+                        continue;
+                    }
+
+                    uint32_t count = 0;
+                    uint32_t pos = 0;
+
+                    while (pos < refs->rle_size)
+                    {
+                        uint32_t facet_size = refs->data[pos];
+
+                        if (pos + 1 + facet_size > refs->rle_size)
+                        {
+                            break;
+                        }
+
+                        pos += 1 + facet_size;
+                        count += 1;
+                    }
+
+                    // DrawText(TextFormat("dim %u: %u", d, count), debug_x, debug_y + 16 * d, 14, WHITE);
+                }
+            }
+        }
+
         EndDrawing();
     }
 }
@@ -726,10 +904,9 @@ void app_exit()
     exit(0);
 }
 
-void app_set_model(ModelType type)
+void app_set_model(ModelType type, PolytopeMesh* opt_custom)
 {
-    mesh4d_free(&APP->model.mesh);
-    APP->model.type = type;
+    pm_free(&APP->model.mesh);
 
     APP->model.axes.x = (Vector4){ 1, 0, 0, 0 };
     APP->model.axes.y = (Vector4){ 0, 1, 0, 0 };
@@ -738,31 +915,40 @@ void app_set_model(ModelType type)
 
     // dont set rotation state in here, preserve it for comparing models
 
+    if (opt_custom)
+    {
+        APP->model.type = MT_CUSTOM;
+        APP->model.mesh = *opt_custom;
+        return;
+    }
+
+    APP->model.type = type;
+
     switch(type)
     {
-        case MT_TETRA:
-            APP->model.mesh = mesh4d_new_tetra();
+        case MT_3D_TETRA:
+            APP->model.mesh = pm_new_3d_tetrahedron();
             break;
-        case MT_CUBE:
-            APP->model.mesh = mesh4d_new_cube();
+        case MT_3D_CUBE:
+            APP->model.mesh = pm_new_3d_cube();
             break;
-        case MT_OCT:
-            APP->model.mesh = mesh4d_new_oct();
+        case MT_3D_OCT:
+            APP->model.mesh = pm_new_3d_octahedron();
             break;
-        case MT_ICO:
-            APP->model.mesh = mesh4d_new_ico();
+        case MT_3D_ICO:
+            APP->model.mesh = pm_new_3d_icosahedron();
             break;
-        case MT_5CELL:
-            APP->model.mesh = mesh4d_new_5cell();
+        case MT_4D_5CELL:
+            APP->model.mesh = pm_new_4d_5cell();
             break;
-        case MT_8CELL:
-            APP->model.mesh = mesh4d_new_8cell();
+        case MT_4D_8CELL:
+            APP->model.mesh = pm_new_4d_8cell();
             break;
-        case MT_16CELL:
-            APP->model.mesh = mesh4d_new_16cell();
+        case MT_4D_16CELL:
+            APP->model.mesh = pm_new_4d_16cell();
             break;
-        case MT_24CELL:
-            APP->model.mesh = mesh4d_new_24cell();
+        case MT_4D_24CELL:
+            APP->model.mesh = pm_new_4d_24cell();
             break;
         default:
             break;

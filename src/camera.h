@@ -19,7 +19,11 @@ typedef struct {
     // CM_3D_ORBITAL
     float orbital_yaw;
     float orbital_pitch;
+    float orbital_roll;
     float orbital_radius;
+    Vector3 orbital_up;
+    // test
+    Vector3 orbital_position;
 } Camera4D;
 
 void update_camera_ortho();
